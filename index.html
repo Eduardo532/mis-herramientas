@@ -3,71 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/9333/9333991.png">
-    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/9333/9333991.png">
     <title>Herramientas de Lalo</title>
+    
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3938/3938457.png">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3938/3938457.png">
+
     <style>
         :root {
             --bg: #121212;
             --card-bg: #1e1e1e;
             --accent: #00e676;
             --text: #ffffff;
+            --text-secondary: #b0b0b0;
         }
+
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg);
             color: var(--text);
+            margin: 0;
+            padding: 2rem 1rem;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 2rem;
-            margin: 0;
         }
-        h1 { margin-bottom: 2rem; color: var(--accent); }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            color: var(--accent);
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.2rem;
             width: 100%;
-            max-width: 800px;
+            max-width: 600px;
         }
+
         .card {
             background: var(--card-bg);
-            padding: 1.5rem;
-            border-radius: 12px;
+            padding: 1.2rem 1.5rem;
+            border-radius: 15px;
             text-decoration: none;
             color: white;
             border: 1px solid #333;
-            transition: transform 0.2s, border-color 0.2s;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
+
         .card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-3px);
             border-color: var(--accent);
+            box-shadow: 0 6px 12px rgba(0, 230, 118, 0.15);
         }
-        .card span { font-weight: bold; }
-        .icon { font-size: 1.5rem; }
+
+        .card-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .card-info span {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .icon-arrow {
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        /* Estilo para cuando se presiona en el celular */
+        .card:active {
+            transform: scale(0.98);
+            background: #252525;
+        }
     </style>
 </head>
 <body>
 
-    <h1>Mis Herramientas</h1>
+    <header>
+        <h1>Mis Herramientas</h1>
+        <p>Acceso rápido a utilidades personalizadas</p>
+    </header>
 
     <div class="grid">
+        
         <a href="calculadora ratio cafe.html" class="card">
-            <span>☕ Calculadora Café</span>
-            <div class="icon">➜</div>
+            <div class="card-info">
+                <span>☕</span>
+                <span>Calculadora Café</span>
+            </div>
+            <div class="icon-arrow">➜</div>
         </a>
 
         <a href="calcualdora aleasiones.html" class="card">
-            <span>⚖️ Aleaciones</span>
-            <div class="icon">➜</div>
+            <div class="card-info">
+                <span>⚖️</span>
+                <span>Calculadora Aleaciones</span>
+            </div>
+            <div class="icon-arrow">➜</div>
         </a>
 
         </div>
 
 </body>
-
 </html>
