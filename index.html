@@ -3,125 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Herramientas de Lalo</title>
+    <title>Lalo's Hub</title>
     
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3938/3938457.png">
-    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3938/3938457.png">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/9701/9701587.png">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/9701/9701587.png">
 
     <style>
         :root {
-            --bg: #121212;
-            --card-bg: #1e1e1e;
-            --accent: #00e676;
-            --text: #ffffff;
-            --text-secondary: #b0b0b0;
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --text-secondary: #94a3b8;
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: var(--bg);
+            background-image: radial-gradient(circle at top right, #1e293b, #0f172a);
             color: var(--text);
             margin: 0;
-            padding: 2rem 1rem;
+            padding: 3rem 1.5rem;
             display: flex;
             flex-direction: column;
             align-items: center;
+            min-height: 100vh;
         }
 
         header {
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 3.5rem;
+        }
+
+        /* Imagen Principal Grande y Completa */
+        .main-logo {
+            width: 150px;
+            height: 150px;
+            margin-bottom: 1.5rem;
+            filter: drop-shadow(0 0 15px rgba(56, 189, 248, 0.4));
         }
 
         h1 {
-            font-size: 1.8rem;
-            color: var(--accent);
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin: 0;
+            background: linear-gradient(to right, #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        p {
+        .subtitle {
             color: var(--text-secondary);
-            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
         }
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: 1fr;
             gap: 1.2rem;
             width: 100%;
-            max-width: 600px;
+            max-width: 480px;
         }
 
         .card {
             background: var(--card-bg);
-            padding: 1.2rem 1.5rem;
-            border-radius: 15px;
+            backdrop-filter: blur(12px);
+            padding: 1.5rem;
+            border-radius: 28px;
             text-decoration: none;
             color: white;
-            border: 1px solid #333;
-            transition: all 0.2s ease;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
         .card:hover {
-            transform: translateY(-3px);
+            transform: translateY(-4px);
             border-color: var(--accent);
-            box-shadow: 0 6px 12px rgba(0, 230, 118, 0.15);
+            background: rgba(30, 41, 59, 0.95);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         }
 
-        .card-info {
+        .card-content {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 1.2rem;
         }
 
-        .card-info span {
+        .icon-circle {
+            background: rgba(56, 189, 248, 0.1);
+            width: 55px;
+            height: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 20px;
+            font-size: 1.6rem;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+        }
+
+        .card-title {
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
         }
 
-        .icon-arrow {
+        .arrow {
             color: var(--accent);
-            font-weight: bold;
+            background: rgba(56, 189, 248, 0.1);
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 0.9rem;
+            transition: transform 0.3s ease;
         }
 
-        /* Estilo para cuando se presiona en el celular */
-        .card:active {
-            transform: scale(0.98);
-            background: #252525;
+        .card:hover .arrow {
+            transform: translateX(5px);
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        /* Ajuste para móviles */
+        @media (max-width: 480px) {
+            h1 { font-size: 1.8rem; }
+            .main-logo { width: 120px; height: 120px; }
         }
     </style>
 </head>
 <body>
 
     <header>
+        <img src="https://cdn-icons-png.flaticon.com/512/9701/9701587.png" alt="Servicios Web" class="main-logo">
         <h1>Mis Herramientas</h1>
-        <p>Acceso rápido a utilidades personalizadas</p>
+        <p class="subtitle">Panel de Control</p>
     </header>
 
     <div class="grid">
         
         <a href="calculadora ratio cafe.html" class="card">
-            <div class="card-info">
-                <span>☕</span>
-                <span>Calculadora Café</span>
+            <div class="card-content">
+                <div class="icon-circle">☕</div>
+                <span class="card-title">Calculadora Café</span>
             </div>
-            <div class="icon-arrow">➜</div>
+            <div class="arrow">➜</div>
         </a>
 
         <a href="calcualdora aleasiones.html" class="card">
-            <div class="card-info">
-                <span>⚖️</span>
-                <span>Calculadora Aleaciones</span>
+            <div class="card-content">
+                <div class="icon-circle">⚖️</div>
+                <span class="card-title">Aleaciones</span>
             </div>
-            <div class="icon-arrow">➜</div>
+            <div class="arrow">➜</div>
         </a>
 
-        </div>
+    </div>
 
 </body>
 </html>
