@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramientas de Lalo</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --card-bg: #1e1e1e;
+            --accent: #00e676;
+            --text: #ffffff;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            margin: 0;
+        }
+        h1 { margin-bottom: 2rem; color: var(--accent); }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            width: 100%;
+            max-width: 800px;
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-decoration: none;
+            color: white;
+            border: 1px solid #333;
+            transition: transform 0.2s, border-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+        .card span { font-weight: bold; }
+        .icon { font-size: 1.5rem; }
+    </style>
+</head>
+<body>
+
+    <h1>Mis Herramientas</h1>
+
+    <div class="grid">
+        <a href="calculadora ratio cafe.html" class="card">
+            <span>☕ Calculadora Café</span>
+            <div class="icon">➜</div>
+        </a>
+
+        <a href="calcualdora aleasiones.html" class="card">
+            <span>⚖️ Aleaciones</span>
+            <div class="icon">➜</div>
+        </a>
+
+        </div>
+
+</body>
+</html>

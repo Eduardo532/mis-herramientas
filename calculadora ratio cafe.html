@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Café Pour-Over</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f3f4f6;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    color: #1f2937;
+  }
+ .card {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 400px;
+  }
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: #4b5563;
+  }
+ .control-group {
+    margin-bottom: 1.25rem;
+  }
+  label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #374151;
+  }
+  input, select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    ring: 2px solid #3b82f6;
+  }
+ .result-box {
+    background-color: #ecfdf5;
+    border: 1px solid #10b981;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 2rem;
+    text-align: center;
+  }
+ .result-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #059669;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+ .result-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #065f46;
+  }
+ .info {
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-align: center;
+    margin-top: 1rem;
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Calculadora V60 / Manual</h1>
+
+  <div class="control-group">
+    <label for="ratio">Selecciona tu Ratio (Fuerza)</label>
+    <select id="ratio">
+      <option value="12">1:12 (Muy Intenso/Hielo)</option>
+      <option value="14">1:14 (Cuerpo Pesado)</option>
+      <option value="15">1:15 (Balanceado/Kasuya)</option>
+      <option value="16" selected>1:16 (Estándar SCA)</option>
+      <option value="16.67">1:16.7 (J. Hoffmann)</option>
+      <option value="17">1:17 (Ligero/Floral)</option>
+      <option value="18">1:18 (Muy Ligero)</option>
+    </select>
+  </div>
+
+  <div class="control-group">
+    <label for="coffee">Café (gramos)</label>
+    <input type="number" id="coffee" placeholder="Ej: 20" step="0.1">
+  </div>
+
+  <div class="control-group">
+    <label for="water">Agua (ml / gramos)</label>
+    <input type="number" id="water" placeholder="Ej: 320" step="1">
+  </div>
+
+  <div class="result-box">
+    <div class="result-title">Tiempo Total Sugerido</div>
+    <div class="result-value" id="time-result">-- : --</div>
+  </div>
+  
+  <p class="info">
+    El tiempo incluye el "bloom".<br>
+    Molienda más fina = más tiempo.<br>
+    Molienda más gruesa = menos tiempo.
+  </p>
+</div>
+
+<script>
+  const ratioSelect = document.getElementById('ratio');
+  const coffeeInput = document.getElementById('coffee');
+  const waterInput = document.getElementById('water');
+  const timeResult = document.getElementById('time-result');
+
+  // Función para estimar tiempo basado en volumen de agua
+  // Basado en rangos estándar V60/Kalita
+  function estimateTime(waterAmount) {
+    if (waterAmount <= 0) return "-- : --";
+    if (waterAmount < 250) return "2:00 - 2:45 min";
+    if (waterAmount < 400) return "2:30 - 3:15 min"; // Rango estándar para 1 taza
+    if (waterAmount < 600) return "3:00 - 3:45 min"; // Rango estándar para 2 tazas (Hoffmann)
+    return "3:30 - 4:30+ min"; // Chemex o grandes lotes
+  }
+
+  function updateFromCoffee() {
+    const ratio = parseFloat(ratioSelect.value);
+    const coffee = parseFloat(coffeeInput.value);
+    
+    if (!isNaN(coffee) && coffee > 0) {
+      const water = Math.round(coffee * ratio);
+      waterInput.value = water;
+      timeResult.textContent = estimateTime(water);
+    } else {
+      waterInput.value = '';
+      timeResult.textContent = "-- : --";
+    }
+  }
+
+  function updateFromWater() {
+    const ratio = parseFloat(ratioSelect.value);
+    const water = parseFloat(waterInput.value);
+
+    if (!isNaN(water) && water > 0) {
+      const coffee = (water / ratio).toFixed(1);
+      coffeeInput.value = coffee;
+      timeResult.textContent = estimateTime(water);
+    } else {
+      coffeeInput.value = '';
+      timeResult.textContent = "-- : --";
+    }
+  }
+
+  // Inicializar con valores por defecto (1 taza estándar)
+  coffeeInput.value = 20;
+  updateFromCoffee();
+
+  // Event Listeners
+  coffeeInput.addEventListener('input', updateFromCoffee);
+  waterInput.addEventListener('input', updateFromWater);
+  
+  // Si cambia el ratio, recalculamos el agua manteniendo el café fijo
+  ratioSelect.addEventListener('change', updateFromCoffee);
+
+</script>
+
+</body>
+</html>

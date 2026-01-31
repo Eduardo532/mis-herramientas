@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Aleaciones</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --border: #e5e7eb;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 600px;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .config-section {
+            background-color: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box; 
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .metal-card {
+            border-left: 4px solid var(--primary);
+            background: #fff;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .metal-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .summary {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 2px dashed var(--border);
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+        }
+
+        .total-percent {
+            color: var(--primary);
+        }
+        
+        .alert {
+            color: #dc2626;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: none;
+        }
+
+        @media (max-width: 500px) {
+            .metal-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Calculadora de Aleaciones</h1>
+
+    <div class="config-section">
+        <div class="form-group">
+            <label for="totalAmount">Cantidad Final de la Aleación (g, kg, oz...)</label>
+            <input type="number" id="totalAmount" placeholder="Ej: 1000" min="0" step="any">
+        </div>
+
+        <div class="form-group">
+            <label>Número de Metales:</label>
+            <div class="radio-group">
+                <label class="radio-option">
+                    <input type="radio" name="numMetals" value="2" checked onchange="toggleMetals()"> 2 Metales
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="numMetals" value="3" onchange="toggleMetals()"> 3 Metales
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div id="metalsContainer">
+        <div class="metal-card">
+            <div class="metal-row">
+                <div>
+                    <label>Nombre (Opcional)</label>
+                    <input type="text" placeholder="Ej: Cobre" class="metal-name">
+                </div>
+                <div>
+                    <label>Porcentaje (%)</label>
+                    <input type="number" class="metal-percent" placeholder="0" min="0" max="100" step="0.01" oninput="calculateFromPercent(0)">
+                </div>
+                <div>
+                    <label>Cantidad</label>
+                    <input type="number" class="metal-qty" placeholder="0" min="0" step="any" oninput="calculateFromQty(0)">
+                </div>
+            </div>
+        </div>
+
+        <div class="metal-card">
+            <div class="metal-row">
+                <div>
+                    <label>Nombre (Opcional)</label>
+                    <input type="text" placeholder="Ej: Estaño" class="metal-name">
+                </div>
+                <div>
+                    <label>Porcentaje (%)</label>
+                    <input type="number" class="metal-percent" placeholder="0" min="0" max="100" step="0.01" oninput="calculateFromPercent(1)">
+                </div>
+                <div>
+                    <label>Cantidad</label>
+                    <input type="number" class="metal-qty" placeholder="0" min="0" step="any" oninput="calculateFromQty(1)">
+                </div>
+            </div>
+        </div>
+
+        <div class="metal-card hidden" id="metal3">
+            <div class="metal-row">
+                <div>
+                    <label>Nombre (Opcional)</label>
+                    <input type="text" placeholder="Ej: Zinc" class="metal-name">
+                </div>
+                <div>
+                    <label>Porcentaje (%)</label>
+                    <input type="number" class="metal-percent" placeholder="0" min="0" max="100" step="0.01" oninput="calculateFromPercent(2)">
+                </div>
+                <div>
+                    <label>Cantidad</label>
+                    <input type="number" class="metal-qty" placeholder="0" min="0" step="any" oninput="calculateFromQty(2)">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="summary">
+        <span>Suma de Porcentajes: <span id="sumDisplay" class="total-percent">0%</span></span>
+        <div id="alertMsg" class="alert">⚠️ La suma debe ser 100%</div>
+    </div>
+
+</div>
+
+<script>
+    const totalInput = document.getElementById('totalAmount');
+    const percents = document.querySelectorAll('.metal-percent');
+    const quantities = document.querySelectorAll('.metal-qty');
+    const sumDisplay = document.getElementById('sumDisplay');
+    const alertMsg = document.getElementById('alertMsg');
+    const metal3Div = document.getElementById('metal3');
+
+    // Escuchar cambios en el total general
+    totalInput.addEventListener('input', () => {
+        // Si cambia el total, recalculamos las cantidades basándonos en los porcentajes actuales
+        recalculateAllQuantities();
+    });
+
+    function toggleMetals() {
+        const radios = document.getElementsByName('numMetals');
+        let selected;
+        for(let r of radios) { if(r.checked) selected = r.value; }
+
+        if (selected === "3") {
+            metal3Div.classList.remove('hidden');
+        } else {
+            metal3Div.classList.add('hidden');
+            // Resetear valores del 3er metal si se oculta
+            percents[2].value = '';
+            quantities[2].value = '';
+            updateSum();
+        }
+    }
+
+    // Lógica principal: Cuando el usuario escribe el PORCENTAJE
+    function calculateFromPercent(index) {
+        const total = parseFloat(totalInput.value);
+        const pVal = parseFloat(percents[index].value);
+
+        if (!isNaN(total) && !isNaN(pVal)) {
+            const qty = (total * pVal) / 100;
+            // Redondear a 2 decimales para visualización, o dejar preciso
+            quantities[index].value = parseFloat(qty.toFixed(3));
+        } else {
+            quantities[index].value = '';
+        }
+        updateSum();
+    }
+
+    // Lógica principal: Cuando el usuario escribe la CANTIDAD
+    function calculateFromQty(index) {
+        const total = parseFloat(totalInput.value);
+        const qVal = parseFloat(quantities[index].value);
+
+        if (!isNaN(total) && total > 0 && !isNaN(qVal)) {
+            const pVal = (qVal * 100) / total;
+            percents[index].value = parseFloat(pVal.toFixed(3));
+        } else {
+            percents[index].value = '';
+        }
+        updateSum();
+    }
+
+    // Recalcular todas las cantidades si cambia el Total General
+    function recalculateAllQuantities() {
+        const total = parseFloat(totalInput.value);
+        
+        percents.forEach((input, index) => {
+            // Solo calcular si el input de metal 3 es visible o es índice 0/1
+            if(index === 2 && metal3Div.classList.contains('hidden')) return;
+
+            const pVal = parseFloat(input.value);
+            if (!isNaN(total) && !isNaN(pVal)) {
+                const qty = (total * pVal) / 100;
+                quantities[index].value = parseFloat(qty.toFixed(3));
+            }
+        });
+    }
+
+    function updateSum() {
+        let sum = 0;
+        percents.forEach((input, index) => {
+             // Ignorar el 3er metal si está oculto
+             if(index === 2 && metal3Div.classList.contains('hidden')) return;
+             
+             const val = parseFloat(input.value);
+             if(!isNaN(val)) sum += val;
+        });
+
+        sumDisplay.textContent = sum.toFixed(2) + '%';
+        
+        // Validación visual simple
+        if(Math.abs(sum - 100) > 0.1 && sum !== 0) {
+            sumDisplay.style.color = '#dc2626'; // Rojo
+            alertMsg.style.display = 'block';
+        } else {
+            sumDisplay.style.color = '#2563eb'; // Azul
+            alertMsg.style.display = 'none';
+        }
+    }
+</script>
+
+</body>
+</html>
