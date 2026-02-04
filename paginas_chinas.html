@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sourcing Master | Men's Edition</title>
+    <style>
+        :root {
+            --bg-page: #f1f5f9;
+            --primary: #0f172a;
+            --accent: #2563eb;
+            --text-main: #334155;
+            --text-light: #64748b;
+            
+            /* Colores de Categoría (Código Visual) */
+            --c-tech: #3b82f6;      /* Azul */
+            --c-hobby: #10b981;     /* Verde */
+            --c-men: #0f172a;       /* Negro/Azul oscuro para Hombre */
+            --c-tools: #f97316;     /* Naranja */
+            --c-audio: #8b5cf6;     /* Violeta */
+            --c-general: #64748b;   /* Gris */
+
+            --card-radius: 16px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+
+        /* HEADER */
+        header {
+            background: white;
+            padding: 40px 20px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 { margin: 0; font-size: 2.5rem; font-weight: 800; color: var(--primary); letter-spacing: -1px; }
+        .subtitle { color: var(--text-light); font-size: 1.1rem; margin-top: 5px; }
+
+        /* BARRA DE ACCIONES */
+        .action-bar {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            background: #f8fafc;
+            padding: 12px 20px;
+            border-radius: 50px;
+            border: 1px solid #e2e8f0;
+            width: 320px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+        .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); background: white; }
+
+        .btn-glossary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s;
+        }
+        .btn-glossary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.3); }
+
+        /* FILTROS */
+        .filter-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 15px 10px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .filter-chip {
+            border: 1px solid #cbd5e1;
+            background: white;
+            color: var(--text-light);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-chip:hover, .filter-chip.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        /* GRID */
+        .container {
+            max-width: 1400px;
+            margin: 40px auto 100px;
+            padding: 0 20px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+        }
+
+        /* TARJETA VISUAL (Diseño Anterior) */
+        .card {
+            background: white;
+            border-radius: var(--card-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 1px solid #f1f5f9;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* Borde superior de color */
+        .card::before { content: ''; display: block; height: 5px; width: 100%; }
+        .card[data-cat="tech"]::before { background: var(--c-tech); }
+        .card[data-cat="hobby"]::before { background: var(--c-hobby); }
+        .card[data-cat="men"]::before { background: var(--c-men); }
+        .card[data-cat="tools"]::before { background: var(--c-tools); }
+        .card[data-cat="audio"]::before { background: var(--c-audio); }
+        .card[data-cat="general"]::before { background: var(--c-general); }
+
+        .card-body { padding: 25px; flex-grow: 1; }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .logo-box {
+            width: 56px;
+            height: 56px;
+            min-width: 56px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .logo-img { width: 100%; height: 100%; object-fit: contain; }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin: 0;
+            color: var(--primary);
+            line-height: 1.2;
+        }
+
+        .shipping-tag {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #10b981; /* Verde éxito */
+            display: block;
+            margin-top: 4px;
+        }
+        .shipping-tag.agent { color: #f59e0b; } /* Naranja alerta */
+
+        .card-desc {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .card-footer {
+            padding: 20px 25px;
+            background: #f8fafc;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .btn-visit {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+        .btn-visit:hover { color: var(--accent); }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-box {
+            background: white;
+            width: 90%; max-width: 650px; max-height: 85vh;
+            border-radius: 20px;
+            padding: 30px;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        }
+        .term-item { border-bottom: 1px solid #f1f5f9; padding: 15px 0; }
+        .term-title { font-weight: 800; color: var(--primary); display: block; margin-bottom: 4px; }
+        .term-def { color: var(--text-main); margin: 0; font-size: 0.95rem; }
+
+        @media (max-width: 600px) {
+            h1 { font-size: 2rem; }
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Sourcing Master</h1>
+    <p class="subtitle">Directorio Especializado: Tech, Hobbies & Men's Gear</p>
+    
+    <div class="action-bar">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Buscar tienda, marca o categoría..." onkeyup="filterSearch()">
+        <button class="btn-glossary" onclick="toggleModal(true)">📚 Glosario Importador</button>
+    </div>
+</header>
+
+<nav class="filter-nav" id="filterContainer">
+    <button class="filter-chip active" onclick="filterCat('all')">Todo</button>
+    <button class="filter-chip" onclick="filterCat('tech')">Tecnología & Gadgets</button>
+    <button class="filter-chip" onclick="filterCat('hobby')">Hobby & Coleccionismo</button>
+    <button class="filter-chip" onclick="filterCat('audio')">Audio HiFi</button>
+    <button class="filter-chip" onclick="filterCat('men')">Moda Hombre & Relojes</button>
+    <button class="filter-chip" onclick="filterCat('tools')">Herramientas & Makers</button>
+    <button class="filter-chip" onclick="filterCat('general')">General / Bazar</button>
+</nav>
+
+<main class="container">
+    <div id="grid" class="grid"></div>
+</main>
+
+<div id="glossaryModal" class="modal">
+    <div class="modal-box">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2 style="margin:0; color:var(--primary)">Diccionario Técnico</h2>
+            <button onclick="toggleModal(false)" style="background:none; border:none; font-size:1.5rem; cursor:pointer;">&times;</button>
+        </div>
+        <div id="glossaryList"></div>
+    </div>
+</div>
+
+<script>
+    // --- BASE DE DATOS EXTENDIDA (80+ Tiendas) ---
+    const database = [
+        // === TECNOLOGÍA & GADGETS (Envío Directo) ===
+        { n: "AliExpress", u: "https://www.aliexpress.com", d: "aliexpress.com", c: "tech", tags: ["general", "directo"], desc: "El hub central. Busca Tiendas Oficiales (Anker, Xiaomi, Baseus)." },
+        { n: "Banggood", u: "https://www.banggood.com", d: "banggood.com", c: "tech", tags: ["rc", "tools", "directo"], desc: "Especialista en drones, herramientas y gadgets. Envíos 'Priority' seguros." },
+        { n: "Geekbuying", u: "https://www.geekbuying.com", d: "geekbuying.com", c: "tech", tags: ["3d", "gaming", "directo"], desc: "Top para Impresión 3D, TV Boxes, Monitores y E-Mobility." },
+        { n: "TomTop", u: "https://www.tomtop.com", d: "tomtop.com", c: "tech", tags: ["gadgets", "directo"], desc: "Gadgets económicos, cámaras de acción y accesorios de auto." },
+        { n: "Cafago", u: "https://www.cafago.com", d: "cafago.com", c: "tech", tags: ["gadgets", "directo"], desc: "Outlet tecnológico filial de TomTop. Precios muy bajos." },
+        { n: "Sunsky", u: "https://www.sunsky-online.com", d: "sunsky-online.com", c: "tech", tags: ["repuestos", "directo"], desc: "Mayorista de repuestos móviles y accesorios. Venta desde 1 unidad." },
+        { n: "DX (DealExtreme)", u: "https://www.dx.com", d: "dx.com", c: "tech", tags: ["clasico", "directo"], desc: "El clásico de internet. Cables, adaptadores y luces LED baratas." },
+        { n: "TVC-Mall", u: "https://www.tvc-mall.com", d: "tvc-mall.com", c: "tech", tags: ["fundas", "directo"], desc: "Catálogo masivo de fundas y accesorios móviles." },
+        { n: "Gshopper", u: "https://www.gshopper.com", d: "gshopper.com", c: "tech", tags: ["xiaomi", "directo"], desc: "Fuerte en ecosistema Xiaomi Global y electrodomésticos." },
+        { n: "FastTech", u: "https://www.fasttech.com", d: "fasttech.com", c: "tech", tags: ["diy", "vape", "directo"], desc: "Componentes electrónicos, linternas y baterías 18650." },
+        { n: "Zapals", u: "https://www.zapals.com", d: "zapals.com", c: "tech", tags: ["ofertas", "directo"], desc: "Sitio de ofertas flash y gadgets USB curiosos." },
+        { n: "Gearbest", u: "https://www.gearbest.com", d: "gearbest.com", c: "tech", tags: ["gadgets", "directo"], desc: "Aún relevante para ciertos gadgets y herramientas de nicho." },
+        { n: "MiniInTheBox", u: "https://www.miniinthebox.com", d: "miniinthebox.com", c: "tech", tags: ["accesorios", "directo"], desc: "Gadgets pequeños, correas de reloj y accesorios de PC." },
+        { n: "FocalPrice", u: "https://www.focalprice.com", d: "focalprice.com", c: "tech", tags: ["apple", "directo"], desc: "Accesorios económicos para productos Apple." },
+        { n: "Newegg (Global)", u: "https://www.newegg.com/global", d: "newegg.com", c: "tech", tags: ["pc", "usa"], desc: "Hardware de PC de alta gama. Envía a muchos países." },
+
+        // === AUDIO & HIFI (Chi-Fi) ===
+        { n: "Linsoul", u: "https://www.linsoul.com", d: "linsoul.com", c: "audio", tags: ["iem", "directo"], desc: "La meca del Chi-Fi. Auriculares In-Ear (IEMs), DACs y cables." },
+        { n: "ShenzhenAudio", u: "https://shenzhenaudio.com", d: "shenzhenaudio.com", c: "audio", tags: ["dac", "directo"], desc: "Equipos de escritorio (Topping, SMSL, Moondrop). Envío global." },
+        { n: "HiFiGo", u: "https://hifigo.com", d: "hifigo.com", c: "audio", tags: ["premium", "directo"], desc: "Competidor de Linsoul. Excelente catálogo de audiofilia." },
+        { n: "Penon Audio", u: "https://penonaudio.com", d: "penonaudio.com", c: "audio", tags: ["cables", "directo"], desc: "Cables personalizados y marcas de audio de nicho." },
+        { n: "AliExpress (Fiio)", u: "https://aliexpress.com", d: "fiio.com", c: "audio", tags: ["mp3", "directo"], desc: "Tienda oficial de Fiio. Reproductores Hi-Res y amplificadores." },
+        
+        // === HOBBY, JUGUETES & COLECCIONISMO ===
+        { n: "HobbyKing", u: "https://hobbyking.com", d: "hobbyking.com", c: "hobby", tags: ["rc", "lipo", "directo"], desc: "Estándar mundial para Radio Control, aviones y baterías LiPo." },
+        { n: "AmiAmi", u: "https://www.amiami.com", d: "amiami.com", c: "hobby", tags: ["anime", "japon"], desc: "Tienda #1 de figuras y hobby desde Japón. Envíos seguros." },
+        { n: "HobbyLink Japan", u: "https://www.hlj.com", d: "hlj.com", c: "hobby", tags: ["gunpla", "japon"], desc: "Especialista en Gundam (Gunpla) y Sci-Fi. Almacén privado disponible." },
+        { n: "Plaza Japan", u: "https://www.plazajapan.com", d: "plazajapan.com", c: "hobby", tags: ["trenes", "japon"], desc: "Trenes a escala, herramientas Tamiya y figuras de acción." },
+        { n: "Play-Asia", u: "https://www.play-asia.com", d: "play-asia.com", c: "hobby", tags: ["games", "directo"], desc: "Juegos físicos, ediciones coleccionista y tarjetas prepago." },
+        { n: "Solarba", u: "https://www.solarba.com", d: "solarba.com", c: "hobby", tags: ["diy", "minis"], desc: "Motores solares, miniaturas e imanes para proyectos." },
+        { n: "RobotKingdom", u: "https://www.robotkingdom.com", d: "robotkingdom.com", c: "hobby", tags: ["transformers", "directo"], desc: "Especialista en Transformers y robots 3rd party." },
+        { n: "e2046", u: "https://www.e2046.com", d: "e2046.com", c: "hobby", tags: ["resina", "gk"], desc: "Garage Kits (figuras de resina) y PVC. Catálogo inmenso." },
+        { n: "Mandarake", u: "https://order.mandarake.co.jp", d: "mandarake.co.jp", c: "hobby", tags: ["usado", "japon"], desc: "El mercado de segunda mano más grande de Japón. Tesoros baratos." },
+        { n: "TCG Republic", u: "https://tcgrepublic.com", d: "tcgrepublic.com", c: "hobby", tags: ["cartas", "japon"], desc: "Cartas sueltas de Pokemon/YuGiOh japonesas. Envío gratis." },
+        { n: "RC Moment", u: "https://www.rcmoment.com", d: "rcmoment.com", c: "hobby", tags: ["rc", "drones"], desc: "Drones baratos y piezas de repuesto para helicópteros RC." },
+        { n: "Genshin Tmall", u: "https://yuanshen.tmall.com", d: "tmall.com", c: "hobby", tags: ["agente"], desc: "Tienda oficial Genshin Impact (Requiere Agente)." },
+
+        // === HERRAMIENTAS, DIY & MAKER ===
+        { n: "JLCPCB", u: "https://jlcpcb.com", d: "jlcpcb.com", c: "tools", tags: ["pcb", "directo"], desc: "Fabrica placas electrónicas profesionales desde $2." },
+        { n: "LCSC", u: "https://www.lcsc.com", d: "lcsc.com", c: "tools", tags: ["chips", "directo"], desc: "Millones de componentes electrónicos en stock." },
+        { n: "Seeed Studio", u: "https://www.seeedstudio.com", d: "seeedstudio.com", c: "tools", tags: ["iot", "directo"], desc: "Hardware IoT, sensores Grove y Raspberry Pi." },
+        { n: "Elecrow", u: "https://www.elecrow.com", d: "elecrow.com", c: "tools", tags: ["maker", "directo"], desc: "Pantallas, kits de electrónica y servicios de PCB/Acrílico." },
+        { n: "PCBWay", u: "https://www.pcbway.com", d: "pcbway.com", c: "tools", tags: ["pcb", "directo"], desc: "Alternativa popular a JLCPCB para prototipado rápido." },
+        { n: "DFRobot", u: "https://www.dfrobot.com", d: "dfrobot.com", c: "tools", tags: ["robotica", "directo"], desc: "Robótica educativa, motores y controladores avanzados." },
+        { n: "iFixit", u: "https://www.ifixit.com", d: "ifixit.com", c: "tools", tags: ["reparacion", "usa"], desc: "Las mejores herramientas de reparación del mundo (USA)." },
+        { n: "Adafruit", u: "https://www.adafruit.com", d: "adafruit.com", c: "tools", tags: ["maker", "usa"], desc: "Componentes DIY y tutoriales excelentes (USA)." },
+
+        // === MODA HOMBRE, SNEAKERS & RELOJES ===
+        { n: "ASOS", u: "https://www.asos.com", d: "asos.com", c: "men", tags: ["ropa", "directo"], desc: "Envíos gratis a menudo. Ropa moderna, marcas propias." },
+        { n: "CreationWatches", u: "https://www.creationwatches.com", d: "creationwatches.com", c: "men", tags: ["relojes", "directo"], desc: "Casio, Seiko, Orient a precio mayorista. Envío desde Singapur." },
+        { n: "DHgate Sneakers", u: "https://www.dhgate.com", d: "dhgate.com", c: "men", tags: ["zapatillas", "directo"], desc: "Réplicas y camisetas de fútbol baratas. Revisa valoraciones." },
+        { n: "Shein Men", u: "https://us.shein.com/men", d: "shein.com", c: "men", tags: ["ropa", "directo"], desc: "Básicos y streetwear muy baratos. Calidad mejorando." },
+        { n: "Zaful Men", u: "https://www.zaful.com", d: "zaful.com", c: "men", tags: ["urbano", "directo"], desc: "Estilo urbano, hoodies gráficos y trajes de baño." },
+        { n: "LightInTheBox", u: "https://www.lightinthebox.com", d: "lightinthebox.com", c: "men", tags: ["formal", "directo"], desc: "Abrigos, chaquetas y ropa de evento económica." },
+        { n: "WatchDives", u: "https://watchdives.com", d: "watchdives.com", c: "men", tags: ["relojes", "directo"], desc: "Relojes de buceo 'homenaje' de alta calidad (Steeldive)." },
+        { n: "Naturehike", u: "https://www.naturehike.com", d: "naturehike.com", c: "men", tags: ["outdoor", "directo"], desc: "Equipo de camping ultraligero premium a buen precio." },
+        { n: "SportsDirect", u: "https://www.sportsdirect.com", d: "sportsdirect.com", c: "men", tags: ["deporte", "uk"], desc: "Zapatillas y ropa deportiva de marca en liquidación (UK)." },
+        { n: "YesStyle Men", u: "https://www.yesstyle.com", d: "yesstyle.com", c: "men", tags: ["korea", "directo"], desc: "Moda asiática masculina y cuidado de la piel." },
+        { n: "Weidian", u: "https://www.weidian.com", d: "weidian.com", c: "men", tags: ["agente"], desc: "Mina de oro para sneakers vía Agente." },
+        { n: "Poizon", u: "https://www.poizon.com", d: "poizon.com", c: "men", tags: ["lujo", "agente"], desc: "Autentificación de zapatillas originales (China)." },
+
+                // === GENERAL / BAZAR / OUTLET ===
+        { n: "Temu", u: "https://www.temu.com", d: "temu.com", c: "general", tags: ["bazar", "directo"], desc: "El nuevo gigante. Precios de fábrica y envío rápido." },
+        { n: "Wish", u: "https://www.wish.com", d: "wish.com", c: "general", tags: ["app", "directo"], desc: "Cosas raras y baratas. Mucho gadget curioso." },
+        { n: "eBay", u: "https://www.ebay.com", d: "ebay.com", c: "general", tags: ["subasta", "directo"], desc: "Filtra por 'Buy It Now'. Muchos vendedores chinos usan eBay." },
+        { n: "Joom", u: "https://www.joom.com", d: "joom.com", c: "general", tags: ["europa", "directo"], desc: "Competencia de AliExpress, fuerte en Europa." },
+        { n: "PatPat", u: "https://www.patpat.com", d: "patpat.com", c: "general", tags: ["familia", "directo"], desc: "Ropa para bebés y familia a juego. Muy barata." },
+        { n: "Alibaba", u: "https://www.alibaba.com", d: "alibaba.com", c: "general", tags: ["b2b", "oem"], desc: "Mayoreo. Personaliza tu marca (OEM)." },
+        { n: "1688", u: "https://www.1688.com", d: "1688.com", c: "general", tags: ["b2b", "agente"], desc: "Precios domésticos chinos. Requiere agente." },
+        { n: "Chinavasion", u: "https://www.chinavasion.com", d: "chinavasion.com", c: "general", tags: ["b2b", "tech"], desc: "Mayorista de electrónica y Android TV boxes." }
+    ];
+
+    const glossaryTerms = [
+        { t: "Direct Shipping", d: "Envío directo a tu casa sin intermediarios. Lo más cómodo para minoristas." },
+        { t: "Agente de Compra", d: "Intermediario necesario para comprar en sitios 100% chinos (Taobao, 1688)." },
+        { t: "Chi-Fi", d: "'Chinese Hi-Fi'. Audio de alta fidelidad chino con calidad increíble a bajo precio." },
+        { t: "Aduanazo (Chile)", d: "Impuesto si tu compra supera los $41 USD CIF. Pagas 19% IVA + 6% Arancel." },
+        { t: "OEM", d: "Original Equipment Manufacturer. Productos genéricos que puedes marcar con tu logo." },
+        { t: "LiPo Batteries", d: "Baterías de Litio. Tienen restricciones de envío aéreo. HobbyKing es experto en enviarlas." },
+        { t: "Gunpla", d: "Gundam Plastic Models. Maquetas de robots japoneses." },
+        { t: "Dropshipping", d: "Vender productos que no tienes; la tienda china envía directo a tu cliente." },
+        { t: "Tracking", d: "Número de seguimiento. Vital elegir envíos que lo incluyan (Standard Shipping)." },
+        { t: "Casilla (Forwarder)", d: "Dirección en USA/China para recibir paquetes que no envían a Chile directo." }
+    ];
+
+    // --- LÓGICA ---
+    const grid = document.getElementById('grid');
+    const glossaryList = document.getElementById('glossaryList');
+    const chips = document.querySelectorAll('.filter-chip');
+
+    function render(data) {
+        grid.innerHTML = '';
+        data.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.setAttribute('data-cat', item.c);
+
+            // Badge de envío
+            let shipText = "Envío Directo";
+            let shipClass = "shipping-tag";
+            if(item.tags.includes('agente')) {
+                shipText = "Requiere Agente";
+                shipClass += " agent";
+            } else if(item.tags.includes('usa') || item.tags.includes('uk') || item.tags.includes('japon')) {
+                shipText = "Envío Internacional";
+            }
+
+            // Logo
+            const logoUrl = `https://logo.clearbit.com/${item.d}`;
+
+            card.innerHTML = `
+                <div class="card-body">
+                    <div class="card-header">
+                        <div class="logo-box">
+                            <img src="${logoUrl}" class="logo-img" onerror="this.style.opacity=0.3">
+                        </div>
+                        <div>
+                            <h3 class="card-title">${item.n}</h3>
+                            <span class="${shipClass}">${shipText}</span>
+                        </div>
+                    </div>
+                    <p class="card-desc">${item.desc}</p>
+                </div>
+                <div class="card-footer">
+                    <a href="${item.u}" target="_blank" class="btn-visit">
+                        Visitar Sitio <span>&rarr;</span>
+                    </a>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    function filterCat(cat) {
+        chips.forEach(c => c.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('searchInput').value = ''; 
+        
+        if(cat === 'all') render(database);
+        else render(database.filter(i => i.c === cat));
+    }
+
+    function filterSearch() {
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        const filtered = database.filter(i => 
+            i.n.toLowerCase().includes(q) || 
+            i.desc.toLowerCase().includes(q) || 
+            i.tags.some(t => t.includes(q))
+        );
+        render(filtered);
+        chips.forEach(c => c.classList.remove('active'));
+    }
+
+    // Modal
+    function toggleModal(show) {
+        const modal = document.getElementById('glossaryModal');
+        modal.classList.toggle('active', show);
+        
+        if(show && glossaryList.innerHTML === '') {
+            glossaryTerms.forEach(term => {
+                glossaryList.innerHTML += `
+                    <div class="term-item">
+                        <span class="term-title">${term.t}</span>
+                        <p class="term-def">${term.d}</p>
+                    </div>
+                `;
+            });
+        }
+    }
+    
+    // Cerrar click afuera
+    window.onclick = function(e) {
+        if(e.target === document.getElementById('glossaryModal')) toggleModal(false);
+    }
+
+    // Init
+    render(database);
+
+</script>
+</body>
+</html>
