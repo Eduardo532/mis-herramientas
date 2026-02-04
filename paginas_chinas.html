@@ -12,10 +12,10 @@
             --text-main: #334155;
             --text-light: #64748b;
             
-            /* Colores de Categoría (Código Visual) */
+            /* Colores de Categoría */
             --c-tech: #3b82f6;      /* Azul */
             --c-hobby: #10b981;     /* Verde */
-            --c-men: #0f172a;       /* Negro/Azul oscuro para Hombre */
+            --c-men: #0f172a;       /* Negro */
             --c-tools: #f97316;     /* Naranja */
             --c-audio: #8b5cf6;     /* Violeta */
             --c-general: #64748b;   /* Gris */
@@ -130,7 +130,7 @@
             gap: 30px;
         }
 
-        /* TARJETA VISUAL (Diseño Anterior) */
+        /* TARJETA */
         .card {
             background: white;
             border-radius: var(--card-radius);
@@ -148,7 +148,7 @@
             box-shadow: var(--shadow-hover);
         }
 
-        /* Borde superior de color */
+        /* Border Top Color */
         .card::before { content: ''; display: block; height: 5px; width: 100%; }
         .card[data-cat="tech"]::before { background: var(--c-tech); }
         .card[data-cat="hobby"]::before { background: var(--c-hobby); }
@@ -166,19 +166,36 @@
             margin-bottom: 15px;
         }
 
+        /* Logo Box Mejorado */
         .logo-box {
             width: 56px;
             height: 56px;
             min-width: 56px;
-            background: white;
+            background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 12px;
             padding: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--text-light);
+            position: relative;
         }
-        .logo-img { width: 100%; height: 100%; object-fit: contain; }
+        
+        /* Imagen de logo */
+        .logo-img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
+            border-radius: 6px;
+        }
+
+        /* Fallback Text (Inicial) */
+        .fallback-text {
+            display: none;
+        }
 
         .card-title {
             font-size: 1.25rem;
@@ -192,11 +209,11 @@
             font-size: 0.75rem;
             font-weight: 700;
             text-transform: uppercase;
-            color: #10b981; /* Verde éxito */
+            color: #10b981;
             display: block;
             margin-top: 4px;
         }
-        .shipping-tag.agent { color: #f59e0b; } /* Naranja alerta */
+        .shipping-tag.agent { color: #f59e0b; }
 
         .card-desc {
             font-size: 0.95rem;
@@ -291,11 +308,136 @@
 </div>
 
 <script>
-    // --- BASE DE DATOS EXTENDIDA (80+ Tiendas) ---
+    // --- BASE DE DATOS (80+ Tiendas) ---
     const database = [
         // === TECNOLOGÍA & GADGETS (Envío Directo) ===
         { n: "AliExpress", u: "https://www.aliexpress.com", d: "aliexpress.com", c: "tech", tags: ["general", "directo"], desc: "El hub central. Busca Tiendas Oficiales (Anker, Xiaomi, Baseus)." },
         { n: "Banggood", u: "https://www.banggood.com", d: "banggood.com", c: "tech", tags: ["rc", "tools", "directo"], desc: "Especialista en drones, herramientas y gadgets. Envíos 'Priority' seguros." },
+        { n: "Geekbuying", u: "https://www.geekbuying.com", d: "geekbuying.com", c: "tech", tags: ["3d", "gaming", "directo"], desc: "Top para Impresión 3D, TV Boxes, Monitores y E-Mobility." },
+        { n: "TomTop", u: "https://www.tomtop.com", d: "tomtop.com", c: "tech", tags: ["gadgets", "directo"], desc: "Gadgets económicos, cámaras de acción y accesorios de auto." },
+        { n: "Cafago", u: "https://www.cafago.com", d: "cafago.com", c: "tech", tags: ["gadgets", "directo"], desc: "Outlet tecnológico filial de TomTop. Precios muy bajos." },
+        { n: "Sunsky", u: "https://www.sunsky-online.com", d: "sunsky-online.com", c: "tech", tags: ["repuestos", "directo"], desc: "Mayorista de repuestos móviles y accesorios. Venta desde 1 unidad." },
+        { n: "DX (DealExtreme)", u: "https://www.dx.com", d: "dx.com", c: "tech", tags: ["clasico", "directo"], desc: "El clásico de internet. Cables, adaptadores y luces LED baratas." },
+        { n: "TVC-Mall", u: "https://www.tvc-mall.com", d: "tvc-mall.com", c: "tech", tags: ["fundas", "directo"], desc: "Catálogo masivo de fundas y accesorios móviles." },
+        { n: "Gshopper", u: "https://www.gshopper.com", d: "gshopper.com", c: "tech", tags: ["xiaomi", "directo"], desc: "Fuerte en ecosistema Xiaomi Global y electrodomésticos." },
+        { n: "FastTech", u: "https://www.fasttech.com", d: "fasttech.com", c: "tech", tags: ["diy", "vape", "directo"], desc: "Componentes electrónicos, linternas y baterías 18650." },
+        { n: "Zapals", u: "https://www.zapals.com", d: "zapals.com", c: "tech", tags: ["ofertas", "directo"], desc: "Sitio de ofertas flash y gadgets USB curiosos." },
+        { n: "Gearbest", u: "https://www.gearbest.com", d: "gearbest.com", c: "tech", tags: ["gadgets", "directo"], desc: "Aún relevante para ciertos gadgets y herramientas de nicho." },
+        { n: "MiniInTheBox", u: "https://www.miniinthebox.com", d: "miniinthebox.com", c: "tech", tags: ["accesorios", "directo"], desc: "Gadgets pequeños, correas de reloj y accesorios de PC." },
+        { n: "FocalPrice", u: "https://www.focalprice.com", d: "focalprice.com", c: "tech", tags: ["apple", "directo"], desc: "Accesorios económicos para productos Apple." },
+        { n: "Newegg (Global)", u: "https://www.newegg.com/global", d: "newegg.com", c: "tech", tags: ["pc", "usa"], desc: "Hardware de PC de alta gama. Envía a muchos países." },
+
+        // === AUDIO & HIFI (Chi-Fi) ===
+        { n: "Linsoul", u: "https://www.linsoul.com", d: "linsoul.com", c: "audio", tags: ["iem", "directo"], desc: "La meca del Chi-Fi. Auriculares In-Ear (IEMs), DACs y cables." },
+        { n: "ShenzhenAudio", u: "https://shenzhenaudio.com", d: "shenzhenaudio.com", c: "audio", tags: ["dac", "directo"], desc: "Equipos de escritorio (Topping, SMSL, Moondrop). Envío global." },
+        { n: "HiFiGo", u: "https://hifigo.com", d: "hifigo.com", c: "audio", tags: ["premium", "directo"], desc: "Competidor de Linsoul. Excelente catálogo de audiofilia." },
+        { n: "Penon Audio", u: "https://penonaudio.com", d: "penonaudio.com", c: "audio", tags: ["cables", "directo"], desc: "Cables personalizados y marcas de audio de nicho." },
+        { n: "AliExpress (Fiio)", u: "https://aliexpress.com", d: "fiio.com", c: "audio", tags: ["mp3", "directo"], desc: "Tienda oficial de Fiio. Reproductores Hi-Res y amplificadores." },
+        
+        // === HOBBY, JUGUETES & COLECCIONISMO ===
+        { n: "HobbyKing", u: "https://hobbyking.com", d: "hobbyking.com", c: "hobby", tags: ["rc", "lipo", "directo"], desc: "Estándar mundial para Radio Control, aviones y baterías LiPo." },
+        { n: "AmiAmi", u: "https://www.amiami.com", d: "amiami.com", c: "hobby", tags: ["anime", "japon"], desc: "Tienda #1 de figuras y hobby desde Japón. Envíos seguros." },
+        { n: "HobbyLink Japan", u: "https://www.hlj.com", d: "hlj.com", c: "hobby", tags: ["gunpla", "japon"], desc: "Especialista en Gundam (Gunpla) y Sci-Fi. Almacén privado disponible." },
+        { n: "Plaza Japan", u: "https://www.plazajapan.com", d: "plazajapan.com", c: "hobby", tags: ["trenes", "japon"], desc: "Trenes a escala, herramientas Tamiya y figuras de acción." },
+        { n: "Play-Asia", u: "https://www.play-asia.com", d: "play-asia.com", c: "hobby", tags: ["games", "directo"], desc: "Juegos físicos, ediciones coleccionista y tarjetas prepago." },
+        { n: "Solarba", u: "https://www.solarba.com", d: "solarba.com", c: "hobby", tags: ["diy", "minis"], desc: "Motores solares, miniaturas e imanes para proyectos." },
+        { n: "RobotKingdom", u: "https://www.robotkingdom.com", d: "robotkingdom.com", c: "hobby", tags: ["transformers", "directo"], desc: "Especialista en Transformers y robots 3rd party." },
+        { n: "e2046", u: "https://www.e2046.com", d: "e2046.com", c: "hobby", tags: ["resina", "gk"], desc: "Garage Kits (figuras de resina) y PVC. Catálogo inmenso." },
+        { n: "Mandarake", u: "https://order.mandarake.co.jp", d: "mandarake.co.jp", c: "hobby", tags: ["usado", "japon"], desc: "El mercado de segunda mano más grande de Japón. Tesoros baratos." },
+        { n: "TCG Republic", u: "https://tcgrepublic.com", d: "tcgrepublic.com", c: "hobby", tags: ["cartas", "japon"], desc: "Cartas sueltas de Pokemon/YuGiOh japonesas. Envío gratis." },
+        { n: "RC Moment", u: "https://www.rcmoment.com", d: "rcmoment.com", c: "hobby", tags: ["rc", "drones"], desc: "Drones baratos y piezas de repuesto para helicópteros RC." },
+        { n: "Genshin Tmall", u: "https://yuanshen.tmall.com", d: "tmall.com", c: "hobby", tags: ["agente"], desc: "Tienda oficial Genshin Impact (Requiere Agente)." },
+
+        // === HERRAMIENTAS, DIY & MAKER ===
+        { n: "JLCPCB", u: "https://jlcpcb.com", d: "jlcpcb.com", c: "tools", tags: ["pcb", "directo"], desc: "Fabrica placas electrónicas profesionales desde $2." },
+        { n: "LCSC", u: "https://www.lcsc.com", d: "lcsc.com", c: "tools", tags: ["chips", "directo"], desc: "Millones de componentes electrónicos en stock." },
+        { n: "Seeed Studio", u: "https://www.seeedstudio.com", d: "seeedstudio.com", c: "tools", tags: ["iot", "directo"], desc: "Hardware IoT, sensores Grove y Raspberry Pi." },
+        { n: "Elecrow", u: "https://www.elecrow.com", d: "elecrow.com", c: "tools", tags: ["maker", "directo"], desc: "Pantallas, kits de electrónica y servicios de PCB/Acrílico." },
+        { n: "PCBWay", u: "https://www.pcbway.com", d: "pcbway.com", c: "tools", tags: ["pcb", "directo"], desc: "Alternativa popular a JLCPCB para prototipado rápido." },
+        { n: "DFRobot", u: "https://www.dfrobot.com", d: "dfrobot.com", c: "tools", tags: ["robotica", "directo"], desc: "Robótica educativa, motores y controladores avanzados." },
+        { n: "iFixit", u: "https://www.ifixit.com", d: "ifixit.com", c: "tools", tags: ["reparacion", "usa"], desc: "Las mejores herramientas de reparación del mundo (USA)." },
+        { n: "Adafruit", u: "https://www.adafruit.com", d: "adafruit.com", c: "tools", tags: ["maker", "usa"], desc: "Componentes DIY y tutoriales excelentes (USA)." },
+
+        // === MODA HOMBRE, SNEAKERS & RELOJES ===
+        { n: "ASOS", u: "https://www.asos.com", d: "asos.com", c: "men", tags: ["ropa", "directo"], desc: "Envíos gratis a menudo. Ropa moderna, marcas propias." },
+        { n: "CreationWatches", u: "https://www.creationwatches.com", d: "creationwatches.com", c: "men", tags: ["relojes", "directo"], desc: "Casio, Seiko, Orient a precio mayorista. Envío desde Singapur." },
+        { n: "DHgate Sneakers", u: "https://www.dhgate.com", d: "dhgate.com", c: "men", tags: ["zapatillas", "directo"], desc: "Réplicas y camisetas de fútbol baratas. Revisa valoraciones." },
+        { n: "Shein Men", u: "https://us.shein.com/men", d: "shein.com", c: "men", tags: ["ropa", "directo"], desc: "Básicos y streetwear muy baratos. Calidad mejorando." },
+        { n: "Zaful Men", u: "https://www.zaful.com", d: "zaful.com", c: "men", tags: ["urbano", "directo"], desc: "Estilo urbano, hoodies gráficos y trajes de baño." },
+        { n: "LightInTheBox", u: "https://www.lightinthebox.com", d: "lightinthebox.com", c: "men", tags: ["formal", "directo"], desc: "Abrigos, chaquetas y ropa de evento económica." },
+        { n: "WatchDives", u: "https://watchdives.com", d: "watchdives.com", c: "men", tags: ["relojes", "directo"], desc: "Relojes de buceo 'homenaje' de alta calidad (Steeldive)." },
+        { n: "Naturehike", u: "https://www.naturehike.com", d: "naturehike.com", c: "men", tags: ["outdoor", "directo"], desc: "Equipo de camping ultraligero premium a buen precio." },
+        { n: "SportsDirect", u: "https://www.sportsdirect.com", d: "sportsdirect.com", c: "men", tags: ["deporte", "uk"], desc: "Zapatillas y ropa deportiva de marca en liquidación (UK)." },
+        { n: "YesStyle Men", u: "https://www.yesstyle.com", d: "yesstyle.com", c: "men", tags: ["korea", "directo"], desc: "Moda asiática masculina y cuidado de la piel." },
+        { n: "Weidian", u: "https://www.weidian.com", d: "weidian.com", c: "men", tags: ["agente"], desc: "Mina de oro para sneakers vía Agente." },
+        { n: "Poizon", u: "https://www.poizon.com", d: "poizon.com", c: "men", tags: ["lujo", "agente"], desc: "Autentificación de zapatillas originales (China)." },
+
+        // === GENERAL / BAZAR / OUTLET ===
+        { n: "Temu", u: "https://www.temu.com", d: "temu.com", c: "general", tags: ["bazar", "directo"], desc: "El nuevo gigante. Precios de fábrica y envío rápido." },
+        { n: "Wish", u: "https://www.wish.com", d: "wish.com", c: "general", tags: ["app", "directo"], desc: "Cosas raras y baratas. Mucho gadge"https://www.aliexpress.com", d: "aliexpress.com", c: "tech", tags: ["general", "directo"], desc: "El hub central. Busca Tiendas Oficiales (Anker, Xiaomi, Baseus)." },
+        { n: "Banggood", u: "https://www.banggood.com", d: "banggood.com", c: "tech", tags: ["rc", "tools", "directo"], desc: "Especialista en drones, herramientas y gadgets. Envíos 'Priority' seguros." },
+        { n: "Geekbuying", u: "https://www.geekbuying.com", d: "geekbuying.com", c: "tech", tags: ["3d", "gaming", "directo"], desc: "Top para Impresión 3D, TV Boxes, Monitores y E-Mobility." },
+        { n: "TomTop", u: "https://www.tomtop.com", d: "tomtop.com", c: "tech", tags: ["gadgets", "directo"], desc: "Gadgets económicos, cámaras de acción y accesorios de auto." },
+        { n: "Cafago", u: "https://www.cafago.com", d: "cafago.com", c: "tech", tags: ["gadgets", "directo"], desc: "Outlet tecnológico filial de TomTop. Precios muy bajos." },
+        { n: "Sunsky", u: "https://www.sunsky-online.com", d: "sunsky-online.com", c: "tech", tags: ["repuestos", "directo"], desc: "Mayorista de repuestos móviles y accesorios. Venta desde 1 unidad." },
+        { n: "DX (DealExtreme)", u: "https://www.dx.com", d: "dx.com", c: "tech", tags: ["clasico", "directo"], desc: "El clásico de internet. Cables, adaptadores y luces LED baratas." },
+        { n: "TVC-Mall", u: "https://www.tvc-mall.com", d: "tvc-mall.com", c: "tech", tags: ["fundas", "directo"], desc: "Catálogo masivo de fundas y accesorios móviles." },
+        { n: "Gshopper", u: "https://www.gshopper.com", d: "gshopper.com", c: "tech", tags: ["xiaomi", "directo"], desc: "Fuerte en ecosistema Xiaomi Global y electrodomésticos." },
+        { n: "FastTech", u: "https://www.fasttech.com", d: "fasttech.com", c: "tech", tags: ["diy", "vape", "directo"], desc: "Componentes electrónicos, linternas y baterías 18650." },
+        { n: "Zapals", u: "https://www.zapals.com", d: "zapals.com", c: "tech", tags: ["ofertas", "directo"], desc: "Sitio de ofertas flash y gadgets USB curiosos." },
+        { n: "Gearbest", u: "https://www.gearbest.com", d: "gearbest.com", c: "tech", tags: ["gadgets", "directo"], desc: "Aún relevante para ciertos gadgets y herramientas de nicho." },
+        { n: "MiniInTheBox", u: "https://www.miniinthebox.com", d: "miniinthebox.com", c: "tech", tags: ["accesorios", "directo"], desc: "Gadgets pequeños, correas de reloj y accesorios de PC." },
+        { n: "FocalPrice", u: "https://www.focalprice.com", d: "focalprice.com", c: "tech", tags: ["apple", "directo"], desc: "Accesorios económicos para productos Apple." },
+        { n: "Newegg (Global)", u: "https://www.newegg.com/global", d: "newegg.com", c: "tech", tags: ["pc", "usa"], desc: "Hardware de PC de alta gama. Envía a muchos países." },
+
+        // === AUDIO & HIFI (Chi-Fi) ===
+        { n: "Linsoul", u: "https://www.linsoul.com", d: "linsoul.com", c: "audio", tags: ["iem", "directo"], desc: "La meca del Chi-Fi. Auriculares In-Ear (IEMs), DACs y cables." },
+        { n: "ShenzhenAudio", u: "https://shenzhenaudio.com", d: "shenzhenaudio.com", c: "audio", tags: ["dac", "directo"], desc: "Equipos de escritorio (Topping, SMSL, Moondrop). Envío global." },
+        { n: "HiFiGo", u: "https://hifigo.com", d: "hifigo.com", c: "audio", tags: ["premium", "directo"], desc: "Competidor de Linsoul. Excelente catálogo de audiofilia." },
+        { n: "Penon Audio", u: "https://penonaudio.com", d: "penonaudio.com", c: "audio", tags: ["cables", "directo"], desc: "Cables personalizados y marcas de audio de nicho." },
+        { n: "AliExpress (Fiio)", u: "https://aliexpress.com", d: "fiio.com", c: "audio", tags: ["mp3", "directo"], desc: "Tienda oficial de Fiio. Reproductores Hi-Res y amplificadores." },
+        
+        // === HOBBY, JUGUETES & COLECCIONISMO ===
+        { n: "HobbyKing", u: "https://hobbyking.com", d: "hobbyking.com", c: "hobby", tags: ["rc", "lipo", "directo"], desc: "Estándar mundial para Radio Control, aviones y baterías LiPo." },
+        { n: "AmiAmi", u: "https://www.amiami.com", d: "amiami.com", c: "hobby", tags: ["anime", "japon"], desc: "Tienda #1 de figuras y hobby desde Japón. Envíos seguros." },
+        { n: "HobbyLink Japan", u: "https://www.hlj.com", d: "hlj.com", c: "hobby", tags: ["gunpla", "japon"], desc: "Especialista en Gundam (Gunpla) y Sci-Fi. Almacén privado disponible." },
+        { n: "Plaza Japan", u: "https://www.plazajapan.com", d: "plazajapan.com", c: "hobby", tags: ["trenes", "japon"], desc: "Trenes a escala, herramientas Tamiya y figuras de acción." },
+        { n: "Play-Asia", u: "https://www.play-asia.com", d: "play-asia.com", c: "hobby", tags: ["games", "directo"], desc: "Juegos físicos, ediciones coleccionista y tarjetas prepago." },
+        { n: "Solarba", u: "https://www.solarba.com", d: "solarba.com", c: "hobby", tags: ["diy", "minis"], desc: "Motores solares, miniaturas e imanes para proyectos." },
+        { n: "RobotKingdom", u: "https://www.robotkingdom.com", d: "robotkingdom.com", c: "hobby", tags: ["transformers", "directo"], desc: "Especialista en Transformers y robots 3rd party." },
+        { n: "e2046", u: "https://www.e2046.com", d: "e2046.com", c: "hobby", tags: ["resina", "gk"], desc: "Garage Kits (figuras de resina) y PVC. Catálogo inmenso." },
+        { n: "Mandarake", u: "https://order.mandarake.co.jp", d: "mandarake.co.jp", c: "hobby", tags: ["usado", "japon"], desc: "El mercado de segunda mano más grande de Japón. Tesoros baratos." },
+        { n: "TCG Republic", u: "https://tcgrepublic.com", d: "tcgrepublic.com", c: "hobby", tags: ["cartas", "japon"], desc: "Cartas sueltas de Pokemon/YuGiOh japonesas. Envío gratis." },
+        { n: "RC Moment", u: "https://www.rcmoment.com", d: "rcmoment.com", c: "hobby", tags: ["rc", "drones"], desc: "Drones baratos y piezas de repuesto para helicópteros RC." },
+        { n: "Genshin Tmall", u: "https://yuanshen.tmall.com", d: "tmall.com", c: "hobby", tags: ["agente"], desc: "Tienda oficial Genshin Impact (Requiere Agente)." },
+
+        // === HERRAMIENTAS, DIY & MAKER ===
+        { n: "JLCPCB", u: "https://jlcpcb.com", d: "jlcpcb.com", c: "tools", tags: ["pcb", "directo"], desc: "Fabrica placas electrónicas profesionales desde $2." },
+        { n: "LCSC", u: "https://www.lcsc.com", d: "lcsc.com", c: "tools", tags: ["chips", "directo"], desc: "Millones de componentes electrónicos en stock." },
+        { n: "Seeed Studio", u: "https://www.seeedstudio.com", d: "seeedstudio.com", c: "tools", tags: ["iot", "directo"], desc: "Hardware IoT, sensores Grove y Raspberry Pi." },
+        { n: "Elecrow", u: "https://www.elecrow.com", d: "elecrow.com", c: "tools", tags: ["maker", "directo"], desc: "Pantallas, kits de electrónica y servicios de PCB/Acrílico." },
+        { n: "PCBWay", u: "https://www.pcbway.com", d: "pcbway.com", c: "tools", tags: ["pcb", "directo"], desc: "Alternativa popular a JLCPCB para prototipado rápido." },
+        { n: "DFRobot", u: "https://www.dfrobot.com", d: "dfrobot.com", c: "tools", tags: ["robotica", "directo"], desc: "Robótica educativa, motores y controladores avanzados." },
+        { n: "iFixit", u: "https://www.ifixit.com", d: "ifixit.com", c: "tools", tags: ["reparacion", "usa"], desc: "Las mejores herramientas de reparación del mundo (USA)." },
+        { n: "Adafruit", u: "https://www.adafruit.com", d: "adafruit.com", c: "tools", tags: ["maker", "usa"], desc: "Componentes DIY y tutoriales excelentes (USA)." },
+
+        // === MODA HOMBRE, SNEAKERS & RELOJES ===
+        { n: "ASOS", u: "https://www.asos.com", d: "asos.com", c: "men", tags: ["ropa", "directo"], desc: "Envíos gratis a menudo. Ropa moderna, marcas propias." },
+        { n: "CreationWatches", u: "https://www.creationwatches.com", d: "creationwatches.com", c: "men", tags: ["relojes", "directo"], desc: "Casio, Seiko, Orient a precio mayorista. Envío desde Singapur." },
+        { n: "DHgate Sneakers", u: "https://www.dhgate.com", d: "dhgate.com", c: "men", tags: ["zapatillas", "directo"], desc: "Réplicas y camisetas de fútbol baratas. Revisa valoraciones." },
+        { n: "Shein Men", u: "https://us.shein.com/men", d: "shein.com", c: "men", tags: ["ropa", "directo"], desc: "Básicos y streetwear muy baratos. Calidad mejorando." },
+        { n: "Zaful Men", u: "https://www.zaful.com", d: "zaful.com", c: "men", tags: ["urbano", "directo"], desc: "Estilo urbano, hoodies gráficos y trajes de baño." },
+        { n: "LightInTheBox", u: "https://www.lightinthebox.com", d: "lightinthebox.com", c: "men", tags: ["formal", "directo"], desc: "Abrigos, chaquetas y ropa de evento económica." },
+        { n: "WatchDives", u: "https://watchdives.com", d: "watchdives.com", c: "men", tags: ["relojes", "directo"], desc: "Relojes de buceo 'homenaje' de alta calidad (Steeldive)." },
+        { n: "Naturehike", u: "https://www.naturehike.com", d: "naturehike.com", c: "men", tags: ["outdoor", "directo"], desc: "Equipo de camping ultraligero premium a buen precio." },
+        { n: "SportsDirect", u: "https://www.sportsdirect.com", d: "sportsdirect.com", c: "men", tags: ["deporte", "uk"], desc: "Zapatillas y ropa deportiva de marca en liquidación (UK)." },
+        { n: "YesStyle Men", u: "https://www.yesstyle.com", d: "yesstyle.com", c: "men", tags: ["korea", "directo"], desc: "Moda asiática masculina y cuidado de la piel." },
+        { n: "Weidian", u: "https://www.weidian.com", d: "weidian.com", c: "men", tags: ["agente"], desc: "Mina de oro para sneakers vía Agente." },
+        { n: "Poizon", u: "https://www.poizon.com", d: "poizon.com", c: "men", tags: ["lujo", "agente"], desc: "Autentificación de zapatillas originales (China)." },
+
+        // === GENERAL / BAZAR / OUTLET ===
+        { n: "Temu", u: "https://www.temu.com", d: "temu.com", c: "general", tags: ["bazar", "directo"], desc: "El nuevo gigante. Precios de fábrica y envío rápido." },
+        { n: "Wish", u: "https://www.wish.com", d: "wish.com", c: "general", tags: ["app", "directo"], desc: "Cosas raras y baratas. Mucho gadgec", "tools", "directo"], desc: "Especialista en drones, herramientas y gadgets. Envíos 'Priority' seguros." },
         { n: "Geekbuying", u: "https://www.geekbuying.com", d: "geekbuying.com", c: "tech", tags: ["3d", "gaming", "directo"], desc: "Top para Impresión 3D, TV Boxes, Monitores y E-Mobility." },
         { n: "TomTop", u: "https://www.tomtop.com", d: "tomtop.com", c: "tech", tags: ["gadgets", "directo"], desc: "Gadgets económicos, cámaras de acción y accesorios de auto." },
         { n: "Cafago", u: "https://www.cafago.com", d: "cafago.com", c: "tech", tags: ["gadgets", "directo"], desc: "Outlet tecnológico filial de TomTop. Precios muy bajos." },
