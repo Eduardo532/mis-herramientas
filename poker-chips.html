@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mesa de Fichas Virtual</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        /* --- Variables y Reset --- */
+        :root {
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.85);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --accent: #38bdf8;
+            --accent-hover: #0284c7;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger: #ef4444;
+            --success: #10b981;
+            --radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            background-image: radial-gradient(circle at top right, #1e293b, #0f172a);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+
+        /* --- Utilidades UI --- */
+        .hidden {
+            display: none !important;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: var(--text-main);
+        }
+
+        input {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--accent);
+            color: #0f172a;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        button.secondary {
+            background: transparent;
+            color: var(--accent);
+            border: 1px solid var(--accent);
+        }
+
+        button.secondary:hover {
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        button.danger {
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        button.danger:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* --- Mesa de Juego --- */
+        .table-container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .pot-zone {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: var(--radius);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .pot-amount {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--success);
+            text-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+        }
+
+        .player-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .player-card.is-me {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+        }
+
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .player-name {
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .player-stack {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .player-bet {
+            font-size: 1rem;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        .bet-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+
+        .bet-btn {
+            padding: 0.75rem 0.5rem;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .host-controls {
+            display: flex;
+            gap: 1rem;
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px dashed rgba(239, 68, 68, 0.3);
+            padding: 1.5rem;
+            border-radius: var(--radius);
+            flex-wrap: wrap;
+        }
+
+        .host-title {
+            width: 100%;
+            font-size: 0.9rem;
+            color: var(--danger);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .room-info {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: var(--text-muted);
+            background: rgba(0, 0, 0, 0.2);
+            padding: 0.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 600px) {
+            .players-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="lobby-view" class="card">
+        <h1>Mesa de Fichas</h1>
+        
+        <input type="text" id="player-name" placeholder="Tu Nombre de Jugador" maxlength="15">
+        
+        <div style="margin-top: 2rem;">
+            <button id="btn-create">Crear Sala (Host)</button>
+        </div>
+        
+        <div style="margin-top: 2rem; position: relative;">
+            <div style="text-align: center; margin-bottom: 1rem; color: var(--text-muted);">o únete a una existente</div>
+            <input type="text" id="room-id" placeholder="ID de la Sala">
+            <button id="btn-join" class="secondary">Unirse a la Sala</button>
+        </div>
+    </div>
+
+    <div id="table-view" class="table-container hidden">
+        <div class="room-info" id="room-info-display">
+            ID de Sala: <strong id="display-id">...</strong> (Click para copiar)
+        </div>
+
+        <div class="pot-zone">
+            <div style="color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px;">Pozo Central</div>
+            <div class="pot-amount" id="pot-display">0</div>
+        </div>
+
+        <div id="host-controls-container" class="host-controls hidden">
+            <div class="host-title">Controles de Anfitrión</div>
+            <button id="btn-reset-hand" class="danger" style="flex: 1;">Deshacer Apuestas</button>
+            <div id="assign-pot-buttons" style="display: flex; gap: 0.5rem; flex: 2; flex-wrap: wrap;"></div>
+        </div>
+
+        <div class="players-grid" id="players-grid"></div>
+    </div>
+
+    <script>
+        // --- Estado Global ---
+        const state = {
+            isHost: false,
+            myId: null,
+            myName: '',
+            hostId: null,
+            gameState: {
+                pot: 0,
+                players: [] 
+            }
+        };
+
+        let peer = null;
+        let hostConnection = null; 
+        const clientConnections = new Map(); 
+
+        const INITIAL_CHIPS = 10000;
+        const MAX_PLAYERS = 5;
+
+        // --- Elementos del DOM ---
+        const viewLobby = document.getElementById('lobby-view');
+        const viewTable = document.getElementById('table-view');
+        const inputName = document.getElementById('player-name');
+        const inputRoomId = document.getElementById('room-id');
+        const btnCreate = document.getElementById('btn-create');
+        const btnJoin = document.getElementById('btn-join');
+        const displayId = document.getElementById('display-id');
+        const displayPot = document.getElementById('pot-display');
+        const gridPlayers = document.getElementById('players-grid');
+        const hostControlsContainer = document.getElementById('host-controls-container');
+        const btnResetHand = document.getElementById('btn-reset-hand');
+        const assignPotButtons = document.getElementById('assign-pot-buttons');
+        const roomInfoDisplay = document.getElementById('room-info-display');
+
+        // --- Inicialización y Eventos UI ---
+        function initApp() {
+            btnCreate.addEventListener('click', handleCreateRoom);
+            btnJoin.addEventListener('click', handleJoinRoom);
+            btnResetHand.addEventListener('click', () => hostProcessAction({ type: 'RESET_HAND' }));
+            
+            roomInfoDisplay.addEventListener('click', () => {
+                navigator.clipboard.writeText(state.myId || state.hostId);
+                alert('ID copiado al portapapeles');
+            });
+        }
+
+        function switchView(view) {
+            viewLobby.classList.add('hidden');
+            viewTable.classList.add('hidden');
+            if (view === 'table') viewTable.classList.remove('hidden');
+            else viewLobby.classList.remove('hidden');
+        }
+
+        // --- Lógica WebRTC: General ---
+        function generateShortId() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        function setupPeer(id = null, onOpen) {
+            btnCreate.disabled = true;
+            btnJoin.disabled = true;
+            
+            peer = new Peer(id);
+            
+            peer.on('open', (peerId) => {
+                state.myId = peerId;
+                onOpen(peerId);
+            });
+
+            peer.on('error', (err) => {
+                console.error(err);
+                alert('Error de conexión: ' + err.type);
+                btnCreate.disabled = false;
+                btnJoin.disabled = false;
+            });
+        }
+
+        // --- Lógica WebRTC: Host ---
+        function handleCreateRoom() {
+            const name = inputName.value.trim() || 'Host';
+            state.myName = name;
+            state.isHost = true;
+            
+            setupPeer(generateShortId(), (id) => {
+                state.hostId = id;
+                displayId.innerText = id;
+                hostControlsContainer.classList.remove('hidden');
+                
+                state.gameState.players.push({
+                    id: state.myId,
+                    name: state.myName,
+                    chips: INITIAL_CHIPS,
+                    currentBet: 0
+                });
+                
+                setupHostListeners();
+                updateUI();
+                switchView('table');
+            });
+        }
+
+        function setupHostListeners() {
+            peer.on('connection', (conn) => {
+                if (state.gameState.players.length >= MAX_PLAYERS) {
+                    conn.on('open', () => conn.send({ type: 'ERROR', message: 'Sala llena' }));
+                    setTimeout(() => conn.close(), 1000);
+                    return;
+                }
+
+                conn.on('data', (data) => {
+                    if (data.type === 'JOIN') {
+                        clientConnections.set(conn.peer, conn);
+                        state.gameState.players.push({
+                            id: conn.peer,
+                            name: data.name,
+                            chips: INITIAL_CHIPS,
+                            currentBet: 0
+                        });
+                        broadcastState();
+                    } else {
+                        hostProcessAction(data, conn.peer);
+                    }
+                });
+
+                conn.on('close', () => {
+                    clientConnections.delete(conn.peer);
+                    state.gameState.players = state.gameState.players.filter(p => p.id !== conn.peer);
+                    broadcastState();
+                });
+            });
+        }
+
+        function broadcastState() {
+            updateUI();
+            const stateSnapshot = JSON.stringify(state.gameState);
+            clientConnections.forEach(conn => {
+                if (conn.open) {
+                    conn.send({ type: 'STATE_UPDATE', state: stateSnapshot });
+                }
+            });
+        }
+
+        function hostProcessAction(action, peerId = state.myId) {
+            const player = state.gameState.players.find(p => p.id === peerId);
+            
+            if (action.type === 'BET' && player) {
+                if (player.chips >= action.amount) {
+                    player.chips -= action.amount;
+                    player.currentBet += action.amount;
+                    state.gameState.pot += action.amount;
+                }
+            } 
+            else if (action.type === 'ASSIGN_POT' && state.isHost) {
+                const winner = state.gameState.players.find(p => p.id === action.winnerId);
+                if (winner) {
+                    winner.chips += state.gameState.pot;
+                    state.gameState.pot = 0;
+                    state.gameState.players.forEach(p => p.currentBet = 0);
+                }
+            }
+            else if (action.type === 'RESET_HAND' && state.isHost) {
+                state.gameState.players.forEach(p => {
+                    p.chips += p.currentBet;
+                    p.currentBet = 0;
+                });
+                state.gameState.pot = 0;
+            }
+
+            broadcastState();
+        }
+
+        // --- Lógica WebRTC: Cliente ---
+        function handleJoinRoom() {
+            const name = inputName.value.trim() || 'Jugador';
+            const hostId = inputRoomId.value.trim().toUpperCase();
+            
+            if (!hostId) return;
+
+            state.myName = name;
+            state.hostId = hostId;
+            state.isHost = false;
+
+            setupPeer(null, () => {
+                hostConnection = peer.connect(hostId);
+                
+                hostConnection.on('open', () => {
+                    hostConnection.send({ type: 'JOIN', name: state.myName });
+                    displayId.innerText = hostId;
+                    switchView('table');
+                });
+
+                hostConnection.on('data', (data) => {
+                    if (data.type === 'STATE_UPDATE') {
+                        state.gameState = JSON.parse(data.state);
+                        updateUI();
+                    } else if (data.type === 'ERROR') {
+                        alert(data.message);
+                        window.location.reload();
+                    }
+                });
+
+                hostConnection.on('close', () => {
+                    alert('El anfitrión ha cerrado la mesa.');
+                    window.location.reload();
+                });
+            });
+        }
+
+        function clientSendAction(action) {
+            if (state.isHost) {
+                hostProcessAction(action);
+            } else {
+                if (hostConnection && hostConnection.open) {
+                    hostConnection.send(action);
+                }
+            }
+        }
+
+        // --- Renderizado UI ---
+        function updateUI() {
+            displayPot.innerText = state.gameState.pot.toLocaleString();
+            gridPlayers.innerHTML = '';
+            assignPotButtons.innerHTML = '';
+
+            state.gameState.players.forEach(player => {
+                const isMe = player.id === state.myId;
+                const card = document.createElement('div');
+                card.className = `player-card ${isMe ? 'is-me' : ''}`;
+                
+                card.innerHTML = `
+                    <div class="player-header">
+                        <span class="player-name">${player.name} ${isMe ? '(Tú)' : ''}</span>
+                        <span class="player-stack">${player.chips.toLocaleString()}</span>
+                    </div>
+                    <div class="player-bet">Apuesta actual: <strong style="color:white">+${player.currentBet.toLocaleString()}</strong></div>
+                    <div class="bet-controls">
+                        <button class="bet-btn" onclick="clientSendAction({type: 'BET', amount: 50})" ${!isMe || player.chips < 50 ? 'disabled' : ''}>+50</button>
+                        <button class="bet-btn" onclick="clientSendAction({type: 'BET', amount: 100})" ${!isMe || player.chips < 100 ? 'disabled' : ''}>+100</button>
+                        <button class="bet-btn" onclick="clientSendAction({type: 'BET', amount: 500})" ${!isMe || player.chips < 500 ? 'disabled' : ''}>+500</button>
+                    </div>
+                `;
+                gridPlayers.appendChild(card);
+
+                if (state.isHost) {
+                    const assignBtn = document.createElement('button');
+                    assignBtn.innerText = `Dar Pozo a ${player.name}`;
+                    assignBtn.className = 'secondary';
+                    assignBtn.style.flex = '1';
+                    assignBtn.style.minWidth = '120px';
+                    assignBtn.onclick = () => hostProcessAction({ type: 'ASSIGN_POT', winnerId: player.id });
+                    assignPotButtons.appendChild(assignBtn);
+                }
+            });
+        }
+
+        initApp();
+    </script>
+</body>
+</html>
