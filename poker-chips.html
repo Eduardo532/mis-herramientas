@@ -6,7 +6,6 @@
     <title>Mesa de Fichas Virtual</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        /* --- Variables y Reset --- */
         :root {
             --bg: #0f172a;
             --card-bg: rgba(30, 41, 59, 0.85);
@@ -38,7 +37,6 @@
             padding: 2rem 1rem;
         }
 
-        /* --- Utilidades UI --- */
         .hidden {
             display: none !important;
         }
@@ -91,10 +89,15 @@
             margin-bottom: 0.5rem;
         }
 
-        button:hover {
+        button:hover:not(:disabled) {
             background: var(--accent-hover);
             color: white;
             transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         button.secondary {
@@ -103,7 +106,7 @@
             border: 1px solid var(--accent);
         }
 
-        button.secondary:hover {
+        button.secondary:hover:not(:disabled) {
             background: rgba(56, 189, 248, 0.1);
         }
 
@@ -113,17 +116,43 @@
             border: 1px solid var(--danger);
         }
 
-        button.danger:hover {
+        button.danger:hover:not(:disabled) {
             background: rgba(239, 68, 68, 0.1);
         }
 
-        /* --- Mesa de Juego --- */
         .table-container {
             width: 100%;
             max-width: 900px;
             display: flex;
             flex-direction: column;
             gap: 2rem;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--card-border);
+        }
+
+        .room-info {
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .room-info strong {
+            color: var(--text-main);
+            font-size: 1.2rem;
+        }
+
+        .btn-leave {
+            width: auto;
+            padding: 0.5rem 1rem;
+            margin: 0;
+            font-size: 0.9rem;
         }
 
         .pot-zone {
@@ -143,8 +172,8 @@
 
         .players-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
         }
 
         .player-card {
@@ -192,7 +221,7 @@
         }
 
         .bet-btn {
-            padding: 0.75rem 0.5rem;
+            padding: 0.75rem 0.25rem;
             font-size: 0.9rem;
             margin: 0;
         }
@@ -216,19 +245,14 @@
             margin-bottom: 0.5rem;
         }
 
-        .room-info {
-            text-align: center;
-            margin-bottom: 1rem;
-            color: var(--text-muted);
-            background: rgba(0, 0, 0, 0.2);
-            padding: 0.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-
         @media (max-width: 600px) {
             .players-grid {
                 grid-template-columns: 1fr;
+            }
+            .table-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
             }
         }
     </style>
@@ -252,8 +276,12 @@
     </div>
 
     <div id="table-view" class="table-container hidden">
-        <div class="room-info" id="room-info-display">
-            ID de Sala: <strong id="display-id">...</strong> (Click para copiar)
+        <div class="table-header">
+            <div class="room-info" id="room-info-display">
+                ID de Sala: <strong id="display-id">...</strong>
+                <div style="font-size: 0.8rem; margin-top: 0.25rem;">(Click para copiar)</div>
+            </div>
+            <button id="btn-leave" class="danger btn-leave">Salir de la Sala</button>
         </div>
 
         <div class="pot-zone">
@@ -272,31 +300,21 @@
 
     <script>
         // --- Estado Global ---
-        const state = {
-            isHost: false,
-            myId: null,
-            myName: '',
-            hostId: null,
-            gameState: {
-                pot: 0,
-                players: [] 
-            }
-        };
-
+        let state = getInitialState();
         let peer = null;
         let hostConnection = null; 
-        const clientConnections = new Map(); 
+        let clientConnections = new Map(); 
 
         const INITIAL_CHIPS = 10000;
         const MAX_PLAYERS = 5;
 
-        // --- Elementos del DOM ---
         const viewLobby = document.getElementById('lobby-view');
         const viewTable = document.getElementById('table-view');
         const inputName = document.getElementById('player-name');
         const inputRoomId = document.getElementById('room-id');
         const btnCreate = document.getElementById('btn-create');
         const btnJoin = document.getElementById('btn-join');
+        const btnLeave = document.getElementById('btn-leave');
         const displayId = document.getElementById('display-id');
         const displayPot = document.getElementById('pot-display');
         const gridPlayers = document.getElementById('players-grid');
@@ -305,15 +323,29 @@
         const assignPotButtons = document.getElementById('assign-pot-buttons');
         const roomInfoDisplay = document.getElementById('room-info-display');
 
-        // --- Inicialización y Eventos UI ---
+        // --- Inicialización y Control de Vistas ---
+        function getInitialState() {
+            return {
+                isHost: false,
+                myId: null,
+                myName: '',
+                hostId: null,
+                gameState: {
+                    pot: 0,
+                    players: [] 
+                }
+            };
+        }
+
         function initApp() {
             btnCreate.addEventListener('click', handleCreateRoom);
             btnJoin.addEventListener('click', handleJoinRoom);
+            btnLeave.addEventListener('click', disconnectAndReset);
             btnResetHand.addEventListener('click', () => hostProcessAction({ type: 'RESET_HAND' }));
             
             roomInfoDisplay.addEventListener('click', () => {
-                navigator.clipboard.writeText(state.myId || state.hostId);
-                alert('ID copiado al portapapeles');
+                navigator.clipboard.writeText(state.hostId);
+                alert('ID de sala copiado al portapapeles');
             });
         }
 
@@ -324,7 +356,24 @@
             else viewLobby.classList.remove('hidden');
         }
 
-        // --- Lógica WebRTC: General ---
+        function disconnectAndReset() {
+            if (hostConnection) hostConnection.close();
+            clientConnections.forEach(conn => conn.close());
+            if (peer) peer.destroy();
+            
+            clientConnections.clear();
+            peer = null;
+            hostConnection = null;
+            state = getInitialState();
+            
+            btnCreate.disabled = false;
+            btnJoin.disabled = false;
+            hostControlsContainer.classList.add('hidden');
+            
+            switchView('lobby');
+        }
+
+        // --- Lógica WebRTC ---
         function generateShortId() {
             return Math.random().toString(36).substring(2, 8).toUpperCase();
         }
@@ -343,12 +392,10 @@
             peer.on('error', (err) => {
                 console.error(err);
                 alert('Error de conexión: ' + err.type);
-                btnCreate.disabled = false;
-                btnJoin.disabled = false;
+                disconnectAndReset();
             });
         }
 
-        // --- Lógica WebRTC: Host ---
         function handleCreateRoom() {
             const name = inputName.value.trim() || 'Host';
             state.myName = name;
@@ -442,7 +489,6 @@
             broadcastState();
         }
 
-        // --- Lógica WebRTC: Cliente ---
         function handleJoinRoom() {
             const name = inputName.value.trim() || 'Jugador';
             const hostId = inputRoomId.value.trim().toUpperCase();
@@ -454,7 +500,7 @@
             state.isHost = false;
 
             setupPeer(null, () => {
-                hostConnection = peer.connect(hostId);
+                hostConnection = peer.connect(hostId, { reliable: true });
                 
                 hostConnection.on('open', () => {
                     hostConnection.send({ type: 'JOIN', name: state.myName });
@@ -468,13 +514,13 @@
                         updateUI();
                     } else if (data.type === 'ERROR') {
                         alert(data.message);
-                        window.location.reload();
+                        disconnectAndReset();
                     }
                 });
 
                 hostConnection.on('close', () => {
-                    alert('El anfitrión ha cerrado la mesa.');
-                    window.location.reload();
+                    alert('Conexión perdida con el anfitrión.');
+                    disconnectAndReset();
                 });
             });
         }
@@ -505,11 +551,14 @@
                         <span class="player-name">${player.name} ${isMe ? '(Tú)' : ''}</span>
                         <span class="player-stack">${player.chips.toLocaleString()}</span>
                     </div>
-                    <div class="player-bet">Apuesta actual: <strong style="color:white">+${player.currentBet.toLocaleString()}</strong></div>
+                    <div class="player-bet">Apuesta: <strong style="color:white">+${player.currentBet.toLocaleString()}</strong></div>
                     <div class="bet-controls">
+                        <button class="bet-btn" onclick="clientSendAction({type: 'BET', amount: 10})" ${!isMe || player.chips < 10 ? 'disabled' : ''}>+10</button>
                         <button class="bet-btn" onclick="clientSendAction({type: 'BET', amount: 50})" ${!isMe || player.chips < 50 ? 'disabled' : ''}>+50</button>
                         <button class="bet-btn" onclick="clientSendAction({type: 'BET', amount: 100})" ${!isMe || player.chips < 100 ? 'disabled' : ''}>+100</button>
                         <button class="bet-btn" onclick="clientSendAction({type: 'BET', amount: 500})" ${!isMe || player.chips < 500 ? 'disabled' : ''}>+500</button>
+                        <button class="bet-btn" onclick="clientSendAction({type: 'BET', amount: 1000})" ${!isMe || player.chips < 1000 ? 'disabled' : ''}>+1K</button>
+                        <button class="bet-btn" onclick="clientSendAction({type: 'BET', amount: 5000})" ${!isMe || player.chips < 5000 ? 'disabled' : ''}>+5K</button>
                     </div>
                 `;
                 gridPlayers.appendChild(card);
