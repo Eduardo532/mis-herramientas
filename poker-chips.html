@@ -2,18 +2,17 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mesa de Poker Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Poker Chips Pro - Mesa Circular</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root {
             --bg: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.85);
-            --card-border: rgba(255, 255, 255, 0.08);
-            --table-green: rgba(16, 185, 129, 0.15);
-            --table-border: rgba(16, 185, 129, 0.4);
+            --card-bg: rgba(30, 41, 59, 0.9);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --table-green: #065f46;
+            --table-border: #059669;
             --accent: #38bdf8;
-            --accent-hover: #0284c7;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
             --danger: #ef4444;
@@ -22,11 +21,11 @@
             --radius: 16px;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
 
         body {
             background-color: var(--bg);
-            background-image: radial-gradient(circle at top, #1e293b, #0f172a);
+            background-image: radial-gradient(circle at center, #1e293b, #0f172a);
             color: var(--text-main);
             height: 100vh;
             display: flex;
@@ -36,230 +35,218 @@
 
         .hidden { display: none !important; }
 
-        input {
-            width: 100%; padding: 0.8rem; background: rgba(15, 23, 42, 0.6);
-            border: 1px solid var(--card-border); border-radius: 8px;
-            color: white; font-size: 1rem; outline: none; margin-bottom: 1rem;
-        }
-
-        button {
-            width: 100%; padding: 1rem; background: var(--accent); color: #0f172a;
-            border: none; border-radius: 8px; font-size: 1rem; font-weight: 700;
-            cursor: pointer; transition: all 0.2s;
-        }
-        button:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
-        button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-        button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
-        button.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
-        button.success { background: var(--success); color: white; }
-
+        /* --- LOBBY --- */
         .lobby-container {
-            max-width: 480px; width: 100%; margin: auto; padding: 2rem;
-            background: var(--card-bg); backdrop-filter: blur(12px);
+            max-width: 400px; width: 90%; margin: auto; padding: 2rem;
+            background: var(--card-bg); backdrop-filter: blur(10px);
             border: 1px solid var(--card-border); border-radius: var(--radius);
         }
-
-        .table-view {
-            display: flex; flex-direction: column; height: 100%;
+        input {
+            width: 100%; padding: 0.8rem; background: rgba(0,0,0,0.3);
+            border: 1px solid var(--card-border); border-radius: 8px;
+            color: white; font-size: 1rem; margin-bottom: 1rem; outline: none;
+        }
+        button {
+            width: 100%; padding: 0.8rem; background: var(--accent); color: #0f172a;
+            border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer;
         }
 
-        .header-bar {
-            display: flex; justify-content: space-between; padding: 1rem;
-            background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid var(--card-border);
-            font-size: 0.8rem; color: var(--text-muted); flex-shrink: 0;
+        /* --- MESA DE JUEGO --- */
+        .game-view { display: flex; flex-direction: column; height: 100%; }
+
+        /* Indicador de Ronda */
+        .round-bar {
+            display: flex; justify-content: center; gap: 5px; padding: 10px;
+            background: rgba(0,0,0,0.5); font-size: 0.7rem; font-weight: 800;
+        }
+        .round-step { padding: 4px 8px; border-radius: 4px; color: var(--text-muted); opacity: 0.5; }
+        .round-step.active { color: var(--accent); border: 1px solid var(--accent); opacity: 1; box-shadow: 0 0 10px var(--accent); }
+
+        .table-area {
+            flex: 1; position: relative; display: flex; align-items: center; justify-content: center;
+            padding: 20px; perspective: 1000px;
         }
 
-        .game-area {
-            flex: 1; display: flex; flex-direction: column; align-items: center;
-            padding: 2rem 1rem; position: relative; overflow-y: auto;
+        /* Mesa Central */
+        .poker-table {
+            width: 100%; max-width: 500px; aspect-ratio: 16/9;
+            background: var(--table-green); border: 8px solid var(--table-border);
+            border-radius: 150px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; position: relative;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.6), 0 20px 40px rgba(0,0,0,0.4);
         }
+        .pot-box { text-align: center; }
+        .pot-label { font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); }
+        .pot-value { font-size: 2.5rem; font-weight: 900; color: white; }
 
-        .opponents-ring {
-            display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem;
-            width: 100%; max-width: 800px; margin-bottom: 2rem;
+        /* Jugadores en Círculo */
+        .player-ring {
+            position: absolute; width: 100%; height: 100%; top: 0; left: 0;
+            pointer-events: none;
         }
-
-        .opponent-card {
-            background: var(--card-bg); border: 2px solid var(--card-border);
-            border-radius: 12px; padding: 1rem; min-width: 140px; text-align: center;
-            position: relative; transition: all 0.3s;
+        .player-node {
+            position: absolute; width: 85px; pointer-events: auto;
+            display: flex; flex-direction: column; align-items: center;
         }
-        .opponent-card.is-turn { border-color: var(--accent); box-shadow: 0 0 15px rgba(56, 189, 248, 0.3); }
-        .opponent-card.folded { opacity: 0.5; filter: grayscale(1); }
-
-        .op-name { font-weight: 700; font-size: 1rem; margin-bottom: 0.2rem; }
-        .op-chips { color: var(--success); font-weight: 800; font-size: 1.1rem; }
-        .op-bet { margin-top: 0.5rem; font-size: 0.9rem; color: var(--warning); min-height: 1.2rem; }
-        .op-status { font-size: 0.75rem; text-transform: uppercase; margin-top: 0.2rem; }
-        
-        .dealer-btn {
-            position: absolute; top: -10px; right: -10px; width: 24px; height: 24px;
-            background: white; color: black; border-radius: 50%;
+        .player-avatar {
+            width: 50px; height: 50px; background: var(--card-bg);
+            border: 3px solid var(--card-border); border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
-            font-weight: 900; font-size: 0.8rem; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            font-weight: 900; position: relative;
         }
-
-        .center-table {
-            background: var(--table-green); border: 4px solid var(--table-border);
-            border-radius: 60px; width: 100%; max-width: 600px; min-height: 220px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            box-shadow: inset 0 0 40px rgba(0,0,0,0.5); padding: 1.5rem; text-align: center;
-            margin: auto 0;
-        }
-
-        .phase-indicator { color: var(--accent); font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 0.5rem; }
-        .pot-total { font-size: 3.5rem; font-weight: 900; color: white; text-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .player-node.active-turn .player-avatar { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+        .player-node.folded { opacity: 0.4; filter: grayscale(1); }
         
-        .host-actions { display: flex; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap; justify-content: center; width: 100%; }
-        .host-actions button { width: auto; padding: 0.5rem 1rem; font-size: 0.85rem; margin: 0; min-width: 120px; }
+        .player-name { font-size: 0.7rem; font-weight: 700; margin-top: 4px; text-align: center; white-space: nowrap; }
+        .player-chips { font-size: 0.8rem; color: var(--success); font-weight: 800; }
+        .player-bet-bubble {
+            background: var(--warning); color: black; font-size: 0.7rem;
+            padding: 2px 6px; border-radius: 10px; font-weight: 800;
+            margin-top: 2px;
+        }
+        .dealer-chip {
+            position: absolute; bottom: -5px; right: -5px; background: white;
+            color: black; width: 18px; height: 18px; border-radius: 50%;
+            font-size: 0.6rem; display: flex; align-items: center; justify-content: center;
+            font-weight: 900; border: 1px solid #000;
+        }
 
+        /* --- HERO PANEL --- */
         .hero-panel {
-            background: rgba(15, 23, 42, 0.95); border-top: 1px solid var(--card-border);
-            padding: 1.5rem; z-index: 20; width: 100%; flex-shrink: 0; box-shadow: 0 -10px 20px rgba(0,0,0,0.3);
+            background: #1e293b; border-top: 2px solid var(--card-border);
+            padding: 15px; display: flex; flex-direction: column; gap: 10px;
         }
-
-        .hero-stats { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; max-width: 800px; margin-inline: auto; }
-        .hero-info div:first-child { font-size: 0.9rem; color: var(--text-muted); }
-        .hero-info div:last-child { font-size: 1.8rem; font-weight: 900; color: var(--success); }
-        .hero-bet { text-align: right; color: var(--warning); font-size: 1.2rem; font-weight: 700; }
-
-        .action-controls { display: flex; gap: 0.5rem; max-width: 800px; margin: 0 auto; }
-        .action-controls button { flex: 1; padding: 1.2rem; font-size: 1.1rem; }
+        .hero-data { display: flex; justify-content: space-between; align-items: center; }
+        .hero-stack { font-size: 1.4rem; font-weight: 900; color: var(--accent); }
         
-        .raise-wrapper { flex: 2; display: flex; gap: 0.5rem; }
-        .raise-wrapper input { margin: 0; width: 50%; text-align: center; font-weight: 700; font-size: 1.1rem; }
-        .raise-wrapper button { width: 50%; }
+        .action-row { display: flex; gap: 8px; }
+        .action-row button { flex: 1; padding: 15px 5px; font-size: 0.9rem; }
+        .btn-fold { background: var(--danger); color: white; }
+        .btn-call { background: var(--accent); color: #000; }
+        .btn-raise { background: var(--success); color: white; }
 
+        .raise-control { display: flex; gap: 5px; align-items: center; }
+        .raise-control input { margin: 0; flex: 1; text-align: center; }
+
+        /* Host Controls */
+        .host-overlay {
+            position: absolute; bottom: 10px; width: 100%;
+            display: flex; justify-content: center; gap: 10px;
+        }
+        .host-overlay button { width: auto; padding: 8px 15px; font-size: 0.8rem; }
+
+        /* Ajustes Móviles */
+        @media (max-width: 600px) {
+            .poker-table { max-width: 280px; }
+            .pot-value { font-size: 1.8rem; }
+            .player-node { width: 70px; }
+            .player-avatar { width: 40px; height: 40px; }
+        }
     </style>
 </head>
 <body>
 
-    <div id="view-lobby" class="lobby-container">
-        <h1 style="text-align: center; margin-bottom: 2rem;">Mesa de Poker Pro</h1>
-        
+    <div id="lobby" class="lobby-container">
+        <h2 style="text-align:center; margin-bottom:1.5rem">Mesa Virtual Poker</h2>
         <input type="text" id="p-name" placeholder="Tu Nombre">
-        
-        <div id="host-config" style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-            <label style="font-size: 0.8rem; color: var(--accent);">CONFIGURACIÓN DE HOST</label>
-            <input type="number" id="c-stack" value="10000" placeholder="Stack Inicial" style="margin-top: 0.5rem;">
-            <div style="display: flex; gap: 1rem;">
-                <input type="number" id="c-sb" value="50" placeholder="Ciega Pequeña">
-                <input type="number" id="c-bb" value="100" placeholder="Ciega Grande">
+        <div id="host-setup">
+            <label style="font-size:0.7rem; color:var(--accent)">CONFIGURACIÓN HOST</label>
+            <input type="number" id="h-stack" value="10000">
+            <div style="display:flex; gap:10px">
+                <input type="number" id="h-sb" value="50">
+                <input type="number" id="h-bb" value="100">
             </div>
-            <button id="btn-create">Crear Sala</button>
+            <button onclick="createRoom()">CREAR MESA</button>
         </div>
-        
-        <div style="text-align: center; margin: 1rem 0; color: var(--text-muted);">--- O ---</div>
-        
-        <input type="text" id="j-room" placeholder="ID de Sala">
-        <button id="btn-join" class="secondary">Unirse</button>
+        <div style="margin:1rem 0; text-align:center; opacity:0.5">--- O ---</div>
+        <input type="text" id="j-room" placeholder="ID SALA">
+        <button class="secondary" onclick="joinRoom()">UNIRSE A MESA</button>
     </div>
 
-    <div id="view-table" class="table-view hidden">
-        <div class="header-bar">
-            <div>SALA: <strong id="ui-room" style="color:white; cursor:pointer;">---</strong></div>
-            <div>CIEGAS: <strong id="ui-blinds" style="color:white;">---</strong></div>
+    <div id="game" class="game-view hidden">
+        <div class="round-bar" id="round-indicator">
+            <div class="round-step" id="step-PREFLOP">PRE-FLOP</div>
+            <div class="round-step" id="step-FLOP">FLOP</div>
+            <div class="round-step" id="step-TURN">TURN</div>
+            <div class="round-step" id="step-RIVER">RIVER</div>
+            <div class="round-step" id="step-SHOWDOWN">SHOWDOWN</div>
         </div>
 
-        <div class="game-area">
-            <div id="opponents-container" class="opponents-ring"></div>
-
-            <div class="center-table">
-                <div id="ui-phase" class="phase-indicator">ESPERANDO JUGADORES</div>
-                <div id="ui-pot" class="pot-total">0</div>
-                <div id="host-controls" class="host-actions hidden"></div>
+        <div class="table-area">
+            <div class="poker-table">
+                <div class="pot-box">
+                    <div class="pot-label">Pozo Total</div>
+                    <div class="pot-value" id="ui-pot">0</div>
+                </div>
+                <div id="host-ui" class="host-overlay hidden">
+                    <button class="success" id="btn-start" onclick="hostStartHand()">INICIAR</button>
+                    <div id="winner-picks" style="display:flex; gap:5px"></div>
+                    <button class="danger" onclick="hostForceEnd()">FORZAR CIERRE</button>
+                </div>
             </div>
+            <div class="player-ring" id="player-ring"></div>
         </div>
 
-        <div id="hero-panel" class="hero-panel">
-            <div class="hero-stats">
-                <div class="hero-info">
-                    <div id="hero-name">TÚ</div>
-                    <div id="hero-chips">0</div>
+        <div class="hero-panel" id="hero-panel">
+            <div class="hero-data">
+                <div><strong id="hero-name-label">YO</strong> <span style="font-size:0.7rem; opacity:0.6" id="ui-room-id"></span></div>
+                <div class="hero-stack" id="hero-chips">0</div>
+            </div>
+            <div id="hero-controls" class="hidden">
+                <div class="action-row">
+                    <button class="btn-fold" onclick="sendAction('FOLD')">FOLD</button>
+                    <button class="btn-call" id="btn-call-label" onclick="sendAction('CALL')">CHECK</button>
                 </div>
-                <div class="hero-bet" id="hero-current-bet">Apuesta: 0</div>
-            </div>
-            <div id="hero-actions" class="action-controls hidden">
-                <button class="danger" onclick="sendAction('FOLD')">FOLD</button>
-                <button class="secondary" id="btn-check-call" onclick="sendAction('CALL')">CHECK</button>
-                <div class="raise-wrapper">
-                    <input type="number" id="raise-amt" step="10">
-                    <button class="success" onclick="sendAction('RAISE')">RAISE</button>
+                <div class="raise-control">
+                    <input type="number" id="raise-val" value="200">
+                    <button class="btn-raise" onclick="sendAction('RAISE')">RAISE</button>
                 </div>
             </div>
-            <div id="hero-waiting" style="text-align: center; color: var(--text-muted); font-style: italic;">
-                Esperando tu turno...
-            </div>
+            <div id="hero-msg" style="text-align:center; font-size:0.9rem; color:var(--text-muted)">Esperando partida...</div>
         </div>
     </div>
 
     <script>
-        const s = {
+        let s = {
             isHost: false, myId: null, hostId: null,
             cfg: { stack: 10000, sb: 50, bb: 100 },
-            game: {
-                phase: 'WAITING', 
-                pot: 0,
-                currentBet: 0, 
-                dealerIdx: -1,
-                turnIdx: -1,
-                players: [] 
-            }
+            game: { phase: 'WAITING', pot: 0, currentBet: 0, dealerIdx: -1, turnIdx: -1, players: [] }
         };
-
         let peer, hostConn, clients = new Map();
 
-        document.getElementById('btn-create').onclick = () => {
+        function createRoom() {
             s.isHost = true;
-            s.cfg.stack = parseInt(document.getElementById('c-stack').value) || 10000;
-            s.cfg.sb = parseInt(document.getElementById('c-sb').value) || 50;
-            s.cfg.bb = parseInt(document.getElementById('c-bb').value) || 100;
-            
+            s.cfg.stack = parseInt(document.getElementById('h-stack').value);
+            s.cfg.sb = parseInt(document.getElementById('h-sb').value);
+            s.cfg.bb = parseInt(document.getElementById('h-bb').value);
             initPeer(Math.random().toString(36).substring(2,7).toUpperCase(), (id) => {
                 s.hostId = id;
                 addPlayer(id, document.getElementById('p-name').value || 'Host');
-                showTable();
+                render();
+                document.getElementById('lobby').classList.add('hidden');
+                document.getElementById('game').classList.remove('hidden');
                 setupHost();
-                render(); 
             });
-        };
+        }
 
-        document.getElementById('btn-join').onclick = () => {
+        function joinRoom() {
             const room = document.getElementById('j-room').value.toUpperCase();
-            if(!room) return;
             initPeer(null, () => {
                 hostConn = peer.connect(room, { reliable: true });
                 hostConn.on('open', () => {
                     s.hostId = room;
-                    hostConn.send({ type: 'JOIN', name: document.getElementById('p-name').value || 'Jugador' });
-                    showTable();
+                    hostConn.send({ type: 'JOIN', name: document.getElementById('p-name').value || 'Player' });
+                    document.getElementById('lobby').classList.add('hidden');
+                    document.getElementById('game').classList.remove('hidden');
                 });
                 hostConn.on('data', d => { if(d.type === 'SYNC') { s.game = d.game; s.cfg = d.cfg; render(); } });
             });
-        };
-
-        document.getElementById('ui-room').onclick = async () => {
-            try {
-                await navigator.clipboard.writeText(s.hostId);
-                alert("ID Copiado");
-            } catch (err) {
-                alert("Tu ID es: " + s.hostId);
-            }
-        };
-
-        function initPeer(id, cb) {
-            try {
-                peer = new Peer(id);
-                peer.on('open', pid => { s.myId = pid; cb(pid); });
-                peer.on('error', e => alert('Error de conexión: ' + e.type));
-            } catch (err) {
-                alert("Error al iniciar PeerJS. Revisa tu conexión.");
-            }
         }
 
-        function showTable() {
-            document.getElementById('view-lobby').classList.add('hidden');
-            document.getElementById('view-table').classList.remove('hidden');
+        function initPeer(id, cb) {
+            peer = new Peer(id);
+            peer.on('open', pid => { s.myId = pid; cb(pid); });
+            peer.on('error', e => { alert("Error PeerJS: " + e.type); location.reload(); });
         }
 
         function setupHost() {
@@ -269,16 +256,7 @@
                         clients.set(conn.peer, conn);
                         addPlayer(conn.peer, msg.name);
                         sync();
-                    } else {
-                        processAction(conn.peer, msg);
-                    }
-                });
-                conn.on('close', () => {
-                    clients.delete(conn.peer);
-                    const p = s.game.players.find(x => x.id === conn.peer);
-                    if(p) p.status = 'FOLDED';
-                    checkAdvancePhase();
-                    sync();
+                    } else { processAction(conn.peer, msg); }
                 });
             });
         }
@@ -289,210 +267,174 @@
 
         function sync() {
             render();
-            const payload = { type: 'SYNC', game: s.game, cfg: s.cfg };
-            clients.forEach(c => c.send(payload));
+            clients.forEach(c => c.send({ type: 'SYNC', game: s.game, cfg: s.cfg }));
         }
 
-        window.hostStartHand = function() {
-            if(s.game.players.length < 2) {
-                alert("Necesitas al menos 2 jugadores para iniciar.");
-                return;
-            }
+        // --- MOTOR DE JUEGO ---
+        function hostStartHand() {
+            if(s.game.players.length < 2) return;
             s.game.phase = 'PREFLOP';
             s.game.pot = 0;
             s.game.currentBet = s.cfg.bb;
             s.game.dealerIdx = (s.game.dealerIdx + 1) % s.game.players.length;
+            s.game.players.forEach(p => { p.betRound = 0; p.status = (p.chips > 0) ? 'ACTIVE' : 'OUT'; p.acted = false; });
             
-            s.game.players.forEach(p => {
-                if(p.chips > 0) { p.status = 'ACTIVE'; p.betRound = 0; p.acted = false; }
-                else { p.status = 'FOLDED'; p.betRound = 0; }
-            });
-
             const len = s.game.players.length;
-            const sbIdx = (s.game.dealerIdx + 1) % len;
-            const bbIdx = (s.game.dealerIdx + 2) % len;
+            forceBet((s.game.dealerIdx + 1) % len, s.cfg.sb);
+            forceBet((s.game.dealerIdx + 2) % len, s.cfg.bb);
             s.game.turnIdx = (s.game.dealerIdx + 3) % len;
-
-            forceBet(sbIdx, s.cfg.sb);
-            forceBet(bbIdx, s.cfg.bb);
             ensureValidTurn();
             sync();
-        };
-
-        window.hostForceEnd = function() {
-            gatherBets();
-            s.game.phase = 'WAITING';
-            s.game.turnIdx = -1;
-            s.game.players.forEach(p => p.betRound = 0);
-            sync();
-        };
-
-        window.hostAwardPot = function(pid) {
-            const p = s.game.players.find(x => x.id === pid);
-            if(p) { p.chips += s.game.pot; s.game.pot = 0; s.game.phase = 'WAITING'; sync(); }
-        };
+        }
 
         function forceBet(idx, amt) {
-            const p = s.game.players[idx];
-            if(p.status !== 'ACTIVE') return;
-            const realAmt = Math.min(p.chips, amt);
-            p.chips -= realAmt;
-            p.betRound += realAmt;
+            let p = s.game.players[idx];
+            let actual = Math.min(p.chips, amt);
+            p.chips -= actual; p.betRound += actual;
             if(p.chips === 0) p.status = 'ALLIN';
         }
 
         function processAction(pid, act) {
-            const p = s.game.players.find(x => x.id === pid);
-            if(!p || s.game.players[s.game.turnIdx].id !== pid || p.status !== 'ACTIVE') return;
-
+            let p = s.game.players.find(x => x.id === pid);
+            if(!p || s.game.players[s.game.turnIdx].id !== pid) return;
             p.acted = true;
-            const callAmt = s.game.currentBet - p.betRound;
-
-            if (act.type === 'FOLD') {
-                p.status = 'FOLDED';
-            } 
-            else if (act.type === 'CALL') {
-                const amt = Math.min(p.chips, callAmt);
-                p.chips -= amt; p.betRound += amt;
+            if(act.type === 'FOLD') p.status = 'FOLDED';
+            if(act.type === 'CALL') {
+                let diff = s.game.currentBet - p.betRound;
+                let take = Math.min(p.chips, diff);
+                p.chips -= take; p.betRound += take;
                 if(p.chips === 0) p.status = 'ALLIN';
-            } 
-            else if (act.type === 'RAISE') {
-                const raiseTotal = act.amount; 
-                if (raiseTotal > s.game.currentBet && raiseTotal <= p.chips + p.betRound) {
-                    const addAmt = raiseTotal - p.betRound;
-                    p.chips -= addAmt;
-                    p.betRound = raiseTotal;
-                    s.game.currentBet = raiseTotal;
-                    if(p.chips === 0) p.status = 'ALLIN';
-                    s.game.players.forEach(x => { if(x.id !== p.id && x.status === 'ACTIVE') x.acted = false; });
+            }
+            if(act.type === 'RAISE') {
+                if(act.amt > s.game.currentBet) {
+                    let add = act.amt - p.betRound;
+                    if(p.chips >= add) {
+                        p.chips -= add; p.betRound = act.amt; s.game.currentBet = act.amt;
+                        s.game.players.forEach(x => { if(x.id !== p.id && x.status === 'ACTIVE') x.acted = false; });
+                    }
                 }
             }
-            advanceTurn();
-            sync();
+            advanceTurn(); sync();
         }
 
         function advanceTurn() {
-            checkAdvancePhase();
-            if(s.game.phase === 'SHOWDOWN' || s.game.phase === 'WAITING') return;
-            s.game.turnIdx = (s.game.turnIdx + 1) % s.game.players.length;
-            ensureValidTurn();
-        }
+            let actives = s.game.players.filter(p => p.status === 'ACTIVE');
+            let waiting = actives.filter(p => !p.acted || p.betRound < s.game.currentBet);
+            let notFolded = s.game.players.filter(p => p.status !== 'FOLDED' && p.status !== 'OUT');
 
-        function ensureValidTurn() {
-            let loops = 0;
-            while(s.game.players[s.game.turnIdx].status !== 'ACTIVE' && loops < s.game.players.length) {
-                s.game.turnIdx = (s.game.turnIdx + 1) % s.game.players.length;
-                loops++;
+            if(notFolded.length === 1 || (actives.length === 0 && waiting.length === 0)) {
+                endRound(); s.game.phase = 'SHOWDOWN'; return;
             }
-        }
-
-        function checkAdvancePhase() {
-            const actives = s.game.players.filter(p => p.status === 'ACTIVE');
-            const unacted = actives.filter(p => !p.acted || p.betRound < s.game.currentBet);
-            const nonFolded = s.game.players.filter(p => p.status !== 'FOLDED');
-
-            if(nonFolded.length === 1 || (actives.length <= 1 && unacted.length === 0)) {
-                gatherBets(); s.game.phase = 'SHOWDOWN'; return;
-            }
-
-            if(unacted.length === 0) {
-                gatherBets();
-                const phases = ['PREFLOP', 'FLOP', 'TURN', 'RIVER', 'SHOWDOWN'];
-                const next = phases[phases.indexOf(s.game.phase) + 1];
-                s.game.phase = next;
-                if(next !== 'SHOWDOWN') {
-                    s.game.currentBet = 0;
-                    s.game.players.forEach(p => p.acted = false);
+            if(waiting.length === 0) {
+                endRound();
+                const steps = ['PREFLOP', 'FLOP', 'TURN', 'RIVER', 'SHOWDOWN'];
+                s.game.phase = steps[steps.indexOf(s.game.phase) + 1];
+                if(s.game.phase !== 'SHOWDOWN') {
+                    s.game.currentBet = 0; s.game.players.forEach(p => p.acted = false);
                     s.game.turnIdx = (s.game.dealerIdx + 1) % s.game.players.length;
                     ensureValidTurn();
                 }
+            } else {
+                s.game.turnIdx = (s.game.turnIdx + 1) % s.game.players.length;
+                ensureValidTurn();
             }
         }
 
-        function gatherBets() {
-            s.game.players.forEach(p => { s.game.pot += p.betRound; p.betRound = 0; });
+        function ensureValidTurn() {
+            let count = 0;
+            while(s.game.players[s.game.turnIdx].status !== 'ACTIVE' && count < 10) {
+                s.game.turnIdx = (s.game.turnIdx + 1) % s.game.players.length;
+                count++;
+            }
         }
 
-        window.sendAction = function(type) {
+        function endRound() { s.game.players.forEach(p => { s.game.pot += p.betRound; p.betRound = 0; }); }
+
+        function hostAwardPot(pid) {
+            let p = s.game.players.find(x => x.id === pid);
+            p.chips += s.game.pot; s.game.pot = 0; s.game.phase = 'WAITING'; sync();
+        }
+
+        function hostForceEnd() {
+            s.game.players.forEach(p => { p.chips += p.betRound; p.betRound = 0; });
+            s.game.pot = 0; s.game.phase = 'WAITING'; sync();
+        }
+
+        function sendAction(type) {
             let payload = { type };
-            if(type === 'RAISE') payload.amount = parseInt(document.getElementById('raise-amt').value);
+            if(type === 'RAISE') payload.amt = parseInt(document.getElementById('raise-val').value);
             if(s.isHost) processAction(s.myId, payload); else hostConn.send(payload);
-        };
+        }
 
+        // --- RENDERIZADO ---
         function render() {
-            try {
-                document.getElementById('ui-room').innerText = s.hostId || '---';
-                document.getElementById('ui-blinds').innerText = `${s.cfg.sb}/${s.cfg.bb}`;
-                document.getElementById('ui-phase').innerText = s.game.phase;
-                document.getElementById('ui-pot').innerText = s.game.pot.toLocaleString();
+            document.getElementById('ui-pot').innerText = s.game.pot.toLocaleString();
+            document.getElementById('ui-room-id').innerText = "#" + s.hostId;
+            
+            // Indicador Ronda
+            document.querySelectorAll('.round-step').forEach(el => el.classList.remove('active'));
+            if(document.getElementById('step-' + s.game.phase)) 
+                document.getElementById('step-' + s.game.phase).classList.add('active');
 
-                const oppContainer = document.getElementById('opponents-container');
-                const hControls = document.getElementById('host-controls');
-                oppContainer.innerHTML = ''; 
+            // Mesa y Jugadores Circular
+            const container = document.getElementById('player-ring');
+            container.innerHTML = '';
+            const total = s.game.players.length;
+            const radius = window.innerWidth < 600 ? 110 : 180;
+
+            s.game.players.forEach((p, i) => {
+                const angle = (i * (360 / total)) - 90;
+                const rad = angle * (Math.PI / 180);
+                const x = Math.cos(rad) * radius;
+                const y = Math.sin(rad) * radius;
+
+                const node = document.createElement('div');
+                node.className = `player-node ${p.status === 'FOLDED' ? 'folded' : ''} ${s.game.turnIdx === i ? 'active-turn' : ''}`;
+                node.style.left = `calc(50% + ${x}px - 42px)`;
+                node.style.top = `calc(50% + ${y}px - 40px)`;
                 
-                let myPlayer = null;
+                node.innerHTML = `
+                    <div class="player-avatar">
+                        ${p.name[0]}
+                        ${s.game.dealerIdx === i ? '<div class="dealer-chip">D</div>' : ''}
+                    </div>
+                    <div class="player-name">${p.id === s.myId ? 'TÚ' : p.name}</div>
+                    <div class="player-chips">${p.chips.toLocaleString()}</div>
+                    ${p.betRound > 0 ? `<div class="player-bet-bubble">${p.betRound}</div>` : ''}
+                `;
+                container.appendChild(node);
+            });
 
-                s.game.players.forEach((p, idx) => {
-                    if(p.id === s.myId) { myPlayer = p; }
-                    else {
-                        const isTurn = s.game.turnIdx === idx && s.game.phase !== 'SHOWDOWN' && s.game.phase !== 'WAITING';
-                        const isD = s.game.dealerIdx === idx;
-                        oppContainer.innerHTML += `
-                            <div class="opponent-card ${isTurn ? 'is-turn' : ''} ${p.status === 'FOLDED' ? 'folded' : ''}">
-                                ${isD ? '<div class="dealer-btn">D</div>' : ''}
-                                <div class="op-name">${p.name}</div>
-                                <div class="op-chips">${p.chips.toLocaleString()}</div>
-                                <div class="op-bet">${p.betRound > 0 ? '+'+p.betRound : ''}</div>
-                                <div class="op-status" style="color: ${p.status==='ACTIVE'?'var(--success)':'var(--danger)'}">${p.status}</div>
-                            </div>
-                        `;
-                    }
-                });
-
-                if (s.isHost) {
-                    hControls.classList.remove('hidden');
-                    hControls.style.display = 'flex'; 
-                    
-                    if (s.game.phase === 'WAITING') {
-                        hControls.innerHTML = `<button class="success" onclick="hostStartHand()">INICIAR MANO</button>`;
-                    } else if (s.game.phase === 'SHOWDOWN') {
-                        let btns = s.game.players.filter(p => p.status !== 'FOLDED').map(p => 
-                            `<button class="success" onclick="hostAwardPot('${p.id}')">Dar a ${p.name}</button>`
-                        ).join('');
-                        btns += `<button class="danger" onclick="hostForceEnd()">FORZAR FIN</button>`;
-                        hControls.innerHTML = btns;
-                    } else {
-                        hControls.innerHTML = `<button class="danger" onclick="hostForceEnd()" style="padding: 0.5rem; font-size: 0.8rem; min-width: 100px;">FORZAR FIN</button>`;
-                    }
+            // Hero Panel
+            const my = s.game.players.find(x => x.id === s.myId);
+            if(my) {
+                document.getElementById('hero-chips').innerText = my.chips.toLocaleString();
+                const isMyTurn = s.game.turnIdx === s.game.players.indexOf(my) && s.game.phase !== 'WAITING' && s.game.phase !== 'SHOWDOWN';
+                
+                if(isMyTurn && my.status === 'ACTIVE') {
+                    document.getElementById('hero-controls').classList.remove('hidden');
+                    document.getElementById('hero-msg').classList.add('hidden');
+                    const diff = s.game.currentBet - my.betRound;
+                    document.getElementById('btn-call-label').innerText = diff > 0 ? `CALL ${diff}` : 'CHECK';
+                    document.getElementById('raise-val').min = s.game.currentBet + s.cfg.bb;
                 } else {
-                    hControls.classList.add('hidden');
-                    hControls.style.display = 'none';
+                    document.getElementById('hero-controls').classList.add('hidden');
+                    document.getElementById('hero-msg').classList.remove('hidden');
+                    document.getElementById('hero-msg').innerText = (my.status === 'FOLDED') ? "Te has retirado" : "Esperando turno...";
                 }
+            }
 
-                if(myPlayer) {
-                    document.getElementById('hero-chips').innerText = myPlayer.chips.toLocaleString();
-                    document.getElementById('hero-current-bet').innerText = myPlayer.betRound > 0 ? `+${myPlayer.betRound}` : '';
-                    
-                    const isMyTurn = s.game.turnIdx === s.game.players.findIndex(x => x.id === s.myId) && s.game.phase !== 'SHOWDOWN' && s.game.phase !== 'WAITING';
-                    const actCtrl = document.getElementById('hero-actions');
-                    const waitCtrl = document.getElementById('hero-waiting');
-                    
-                    if(isMyTurn && myPlayer.status === 'ACTIVE') {
-                        actCtrl.classList.remove('hidden'); waitCtrl.classList.add('hidden');
-                        const callAmt = s.game.currentBet - myPlayer.betRound;
-                        const btnCC = document.getElementById('btn-check-call');
-                        btnCC.innerText = callAmt > 0 ? `CALL ${callAmt}` : 'CHECK';
-                        const minRaise = s.game.currentBet === 0 ? s.cfg.bb : s.game.currentBet * 2;
-                        document.getElementById('raise-amt').min = minRaise;
-                        document.getElementById('raise-amt').value = minRaise;
-                    } else {
-                        actCtrl.classList.add('hidden'); waitCtrl.classList.remove('hidden');
-                        waitCtrl.innerText = myPlayer.status === 'FOLDED' ? 'Te has retirado' : 
-                                             (s.game.phase === 'WAITING' ? 'Esperando al Host...' : 'Esperando tu turno...');
-                    }
+            // Host Controls
+            if(s.isHost) {
+                document.getElementById('host-ui').classList.remove('hidden');
+                document.getElementById('btn-start').style.display = (s.game.phase === 'WAITING') ? 'block' : 'none';
+                const winArea = document.getElementById('winner-picks');
+                winArea.innerHTML = '';
+                if(s.game.phase === 'SHOWDOWN') {
+                    s.game.players.filter(p => p.status !== 'FOLDED' && p.status !== 'OUT').forEach(p => {
+                        winArea.innerHTML += `<button onclick="hostAwardPot('${p.id}')">Gana ${p.name}</button>`;
+                    });
                 }
-            } catch (err) {
-                console.error("Error en renderizado: ", err);
             }
         }
     </script>
