@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mesa de Fichas Virtual</title>
+    <title>Mesa de Poker Pro</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
+        /* --- Variables y Estilos Base --- */
         :root {
             --bg: #0f172a;
             --card-bg: rgba(30, 41, 59, 0.85);
@@ -16,17 +17,14 @@
             --text-muted: #94a3b8;
             --danger: #ef4444;
             --success: #10b981;
+            --warning: #f59e0b;
             --radius: 16px;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-family: 'Inter', system-ui, sans-serif;
             background-color: var(--bg);
             background-image: radial-gradient(circle at top right, #1e293b, #0f172a);
             color: var(--text-main);
@@ -37,9 +35,7 @@
             padding: 2rem 1rem;
         }
 
-        .hidden {
-            display: none !important;
-        }
+        .hidden { display: none !important; }
 
         .card {
             background: var(--card-bg);
@@ -52,27 +48,20 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         }
 
-        h1, h2, h3 {
-            text-align: center;
-            margin-bottom: 1.5rem;
-            color: var(--text-main);
-        }
+        h1, h2 { text-align: center; margin-bottom: 1.5rem; }
 
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; }
+        
         input {
             width: 100%;
-            padding: 1rem;
+            padding: 0.8rem;
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid var(--card-border);
             border-radius: 8px;
             color: white;
             font-size: 1rem;
-            margin-bottom: 1rem;
             outline: none;
-            transition: border-color 0.2s;
-        }
-
-        input:focus {
-            border-color: var(--accent);
         }
 
         button {
@@ -89,493 +78,384 @@
             margin-bottom: 0.5rem;
         }
 
-        button:hover:not(:disabled) {
-            background: var(--accent-hover);
-            color: white;
-            transform: translateY(-2px);
-        }
+        button:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+        button.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+        button.all-in { background: var(--danger); color: white; }
 
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        /* --- Mesa y Juego --- */
+        .table-container { width: 100%; max-width: 1000px; display: flex; flex-direction: column; gap: 1.5rem; }
 
-        button.secondary {
-            background: transparent;
-            color: var(--accent);
-            border: 1px solid var(--accent);
-        }
-
-        button.secondary:hover:not(:disabled) {
-            background: rgba(56, 189, 248, 0.1);
-        }
-
-        button.danger {
-            background: transparent;
-            color: var(--danger);
-            border: 1px solid var(--danger);
-        }
-
-        button.danger:hover:not(:disabled) {
-            background: rgba(239, 68, 68, 0.1);
-        }
-
-        .table-container {
-            width: 100%;
-            max-width: 900px;
+        .stats-bar {
             display: flex;
-            flex-direction: column;
-            gap: 2rem;
-        }
-
-        .table-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            justify-content: space-around;
             background: var(--card-bg);
-            padding: 1rem 1.5rem;
+            padding: 1rem;
             border-radius: var(--radius);
             border: 1px solid var(--card-border);
+            text-align: center;
         }
 
-        .room-info {
-            color: var(--text-muted);
-            cursor: pointer;
-        }
-
-        .room-info strong {
-            color: var(--text-main);
-            font-size: 1.2rem;
-        }
-
-        .btn-leave {
-            width: auto;
-            padding: 0.5rem 1rem;
-            margin: 0;
-            font-size: 0.9rem;
-        }
+        .stat-item span { display: block; font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
+        .stat-item strong { font-size: 1.2rem; color: var(--accent); }
 
         .pot-zone {
             background: rgba(16, 185, 129, 0.1);
             border: 1px solid rgba(16, 185, 129, 0.3);
             border-radius: var(--radius);
-            padding: 2rem;
+            padding: 1.5rem;
             text-align: center;
         }
 
-        .pot-amount {
-            font-size: 3.5rem;
-            font-weight: 800;
-            color: var(--success);
-            text-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
-        }
+        .pot-amount { font-size: 3rem; font-weight: 800; color: var(--success); }
 
         .players-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
         }
 
         .player-card {
             background: var(--card-bg);
-            border: 1px solid var(--card-border);
+            border: 2px solid transparent;
             border-radius: var(--radius);
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
+            padding: 1.2rem;
+            position: relative;
         }
 
-        .player-card.is-me {
-            border-color: var(--accent);
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+        .player-card.is-dealer { border-color: var(--warning); }
+        .player-card.is-me { background: rgba(56, 189, 248, 0.05); border-color: var(--card-border); }
+
+        .dealer-badge {
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            background: var(--warning);
+            color: #0f172a;
+            font-size: 0.7rem;
+            font-weight: 900;
+            padding: 2px 8px;
+            border-radius: 10px;
         }
 
-        .player-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+        .player-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .player-name { font-weight: 700; }
+        .player-stack { font-size: 1.4rem; font-weight: 800; color: var(--accent); }
 
-        .player-name {
-            font-weight: 700;
-            font-size: 1.2rem;
-        }
+        .bet-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.9rem; }
+        .current-bet { color: var(--success); font-weight: 700; }
 
-        .player-stack {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--accent);
-        }
+        .bet-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
+        .bet-grid button { padding: 0.5rem; font-size: 0.8rem; margin: 0; }
 
-        .player-bet {
-            font-size: 1rem;
-            color: var(--text-muted);
-            text-align: right;
-        }
-
-        .bet-controls {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.5rem;
-        }
-
-        .bet-btn {
-            padding: 0.75rem 0.25rem;
-            font-size: 0.9rem;
-            margin: 0;
-        }
-
-        .host-controls {
-            display: flex;
-            gap: 1rem;
+        .host-panel {
             background: rgba(239, 68, 68, 0.05);
-            border: 1px dashed rgba(239, 68, 68, 0.3);
-            padding: 1.5rem;
+            border: 1px dashed var(--danger);
+            padding: 1.2rem;
             border-radius: var(--radius);
-            flex-wrap: wrap;
         }
 
-        .host-title {
-            width: 100%;
-            font-size: 0.9rem;
-            color: var(--danger);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
-        }
-
-        @media (max-width: 600px) {
-            .players-grid {
-                grid-template-columns: 1fr;
-            }
-            .table-header {
-                flex-direction: column;
-                gap: 1rem;
-                text-align: center;
-            }
-        }
+        .winner-select-grid { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+        .winner-select-grid button { width: auto; flex: 1; min-width: 120px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
     <div id="lobby-view" class="card">
-        <h1>Mesa de Fichas</h1>
+        <h1>Mesa de Poker</h1>
         
-        <input type="text" id="player-name" placeholder="Tu Nombre de Jugador" maxlength="15">
-        
-        <div style="margin-top: 2rem;">
-            <button id="btn-create">Crear Sala (Host)</button>
+        <div class="form-group">
+            <label>Nombre</label>
+            <input type="text" id="player-name" placeholder="Ej: Lalo" maxlength="12">
+        </div>
+
+        <div id="host-only-config">
+            <div class="form-group">
+                <label>Stack Inicial</label>
+                <input type="number" id="init-stack" value="10000">
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <div class="form-group" style="flex: 1;">
+                    <label>Small Blind</label>
+                    <input type="number" id="val-sb" value="50">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Big Blind</label>
+                    <input type="number" id="val-bb" value="100">
+                </div>
+            </div>
+            <button id="btn-create">Crear Mesa Maesttra</button>
         </div>
         
-        <div style="margin-top: 2rem; position: relative;">
-            <div style="text-align: center; margin-bottom: 1rem; color: var(--text-muted);">o únete a una existente</div>
-            <input type="text" id="room-id" placeholder="ID de la Sala">
-            <button id="btn-join" class="secondary">Unirse a la Sala</button>
+        <div style="border-top: 1px solid var(--card-border); margin: 1.5rem 0; padding-top: 1.5rem;">
+            <div class="form-group">
+                <label>ID de la Sala</label>
+                <input type="text" id="room-id" placeholder="CÓDIGO">
+            </div>
+            <button id="btn-join" class="secondary">Unirse a Partida</button>
         </div>
     </div>
 
     <div id="table-view" class="table-container hidden">
-        <div class="table-header">
-            <div class="room-info" id="room-info-display">
-                ID de Sala: <strong id="display-id">...</strong>
-                <div style="font-size: 0.8rem; margin-top: 0.25rem;">(Click para copiar)</div>
-            </div>
-            <button id="btn-leave" class="danger btn-leave">Salir de la Sala</button>
+        <div class="stats-bar">
+            <div class="stat-item"><span>Sala</span><strong id="display-id">---</strong></div>
+            <div class="stat-item"><span>Stack Inicial</span><strong id="stat-stack">0</strong></div>
+            <div class="stat-item"><span>Ciegas</span><strong id="stat-blinds">0/0</strong></div>
+            <button id="btn-leave" class="danger" style="width: auto; padding: 0 1rem; margin: 0;">Salir</button>
         </div>
 
         <div class="pot-zone">
-            <div style="color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px;">Pozo Central</div>
+            <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Pozo Total</div>
             <div class="pot-amount" id="pot-display">0</div>
         </div>
 
-        <div id="host-controls-container" class="host-controls hidden">
-            <div class="host-title">Controles de Anfitrión</div>
-            <button id="btn-reset-hand" class="danger" style="flex: 1;">Deshacer Apuestas</button>
-            <div id="assign-pot-buttons" style="display: flex; gap: 0.5rem; flex: 2; flex-wrap: wrap;"></div>
+        <div id="host-panel" class="host-panel hidden">
+            <label style="color: var(--danger);">Panel de Control (Host)</label>
+            <button id="btn-next-hand" style="background: var(--success); color: white;">Nueva Mano (Rotar D + Ciegas)</button>
+            <div class="winner-select-grid" id="winner-list"></div>
         </div>
 
         <div class="players-grid" id="players-grid"></div>
     </div>
 
     <script>
-        // --- Estado Global ---
-        let state = getInitialState();
-        let peer = null;
-        let hostConnection = null; 
-        let clientConnections = new Map(); 
+        // --- Estado Maestro ---
+        let state = {
+            isHost: false,
+            myId: null,
+            hostId: null,
+            config: { stack: 10000, sb: 50, bb: 100 },
+            game: {
+                pot: 0,
+                dealerIndex: -1,
+                players: [] 
+            }
+        };
 
-        const INITIAL_CHIPS = 10000;
+        let peer = null;
+        let hostConn = null;
+        let clients = new Map();
+
         const MAX_PLAYERS = 5;
 
-        const viewLobby = document.getElementById('lobby-view');
-        const viewTable = document.getElementById('table-view');
-        const inputName = document.getElementById('player-name');
-        const inputRoomId = document.getElementById('room-id');
-        const btnCreate = document.getElementById('btn-create');
-        const btnJoin = document.getElementById('btn-join');
-        const btnLeave = document.getElementById('btn-leave');
-        const displayId = document.getElementById('display-id');
-        const displayPot = document.getElementById('pot-display');
+        // --- DOM ---
+        const vLobby = document.getElementById('lobby-view');
+        const vTable = document.getElementById('table-view');
         const gridPlayers = document.getElementById('players-grid');
-        const hostControlsContainer = document.getElementById('host-controls-container');
-        const btnResetHand = document.getElementById('btn-reset-hand');
-        const assignPotButtons = document.getElementById('assign-pot-buttons');
-        const roomInfoDisplay = document.getElementById('room-info-display');
+        const listWinners = document.getElementById('winner-list');
 
-        // --- Inicialización y Control de Vistas ---
-        function getInitialState() {
-            return {
-                isHost: false,
-                myId: null,
-                myName: '',
-                hostId: null,
-                gameState: {
-                    pot: 0,
-                    players: [] 
-                }
-            };
-        }
+        // --- Inicialización ---
+        document.getElementById('btn-create').onclick = createRoom;
+        document.getElementById('btn-join').onclick = joinRoom;
+        document.getElementById('btn-leave').onclick = () => location.reload();
+        document.getElementById('btn-next-hand').onclick = startNewHand;
 
-        function initApp() {
-            btnCreate.addEventListener('click', handleCreateRoom);
-            btnJoin.addEventListener('click', handleJoinRoom);
-            btnLeave.addEventListener('click', disconnectAndReset);
-            btnResetHand.addEventListener('click', () => hostProcessAction({ type: 'RESET_HAND' }));
-            
-            roomInfoDisplay.addEventListener('click', () => {
-                navigator.clipboard.writeText(state.hostId);
-                alert('ID de sala copiado al portapapeles');
-            });
-        }
-
-        function switchView(view) {
-            viewLobby.classList.add('hidden');
-            viewTable.classList.add('hidden');
-            if (view === 'table') viewTable.classList.remove('hidden');
-            else viewLobby.classList.remove('hidden');
-        }
-
-        function disconnectAndReset() {
-            if (hostConnection) hostConnection.close();
-            clientConnections.forEach(conn => conn.close());
-            if (peer) peer.destroy();
-            
-            clientConnections.clear();
-            peer = null;
-            hostConnection = null;
-            state = getInitialState();
-            
-            btnCreate.disabled = false;
-            btnJoin.disabled = false;
-            hostControlsContainer.classList.add('hidden');
-            
-            switchView('lobby');
-        }
-
-        // --- Lógica WebRTC ---
-        function generateShortId() {
-            return Math.random().toString(36).substring(2, 8).toUpperCase();
-        }
-
-        function setupPeer(id = null, onOpen) {
-            btnCreate.disabled = true;
-            btnJoin.disabled = true;
-            
-            peer = new Peer(id);
-            
-            peer.on('open', (peerId) => {
-                state.myId = peerId;
-                onOpen(peerId);
-            });
-
-            peer.on('error', (err) => {
-                console.error(err);
-                alert('Error de conexión: ' + err.type);
-                disconnectAndReset();
-            });
-        }
-
-        function handleCreateRoom() {
-            const name = inputName.value.trim() || 'Host';
-            state.myName = name;
+        function createRoom() {
+            const name = document.getElementById('player-name').value || 'Anfitrión';
+            state.config.stack = parseInt(document.getElementById('init-stack').value);
+            state.config.sb = parseInt(document.getElementById('val-sb').value);
+            state.config.bb = parseInt(document.getElementById('val-bb').value);
             state.isHost = true;
-            
-            setupPeer(generateShortId(), (id) => {
+
+            initPeer(Math.random().toString(36).substring(2, 7).toUpperCase(), (id) => {
                 state.hostId = id;
-                displayId.innerText = id;
-                hostControlsContainer.classList.remove('hidden');
-                
-                state.gameState.players.push({
-                    id: state.myId,
-                    name: state.myName,
-                    chips: INITIAL_CHIPS,
-                    currentBet: 0
-                });
-                
-                setupHostListeners();
+                addPlayer(id, name);
                 updateUI();
-                switchView('table');
+                vLobby.classList.add('hidden');
+                vTable.classList.remove('hidden');
+                document.getElementById('host-panel').classList.remove('hidden');
+                setupHostLogic();
             });
         }
 
-        function setupHostListeners() {
-            peer.on('connection', (conn) => {
-                if (state.gameState.players.length >= MAX_PLAYERS) {
-                    conn.on('open', () => conn.send({ type: 'ERROR', message: 'Sala llena' }));
-                    setTimeout(() => conn.close(), 1000);
-                    return;
-                }
+        function joinRoom() {
+            const name = document.getElementById('player-name').value || 'Jugador';
+            const room = document.getElementById('room-id').value.toUpperCase();
+            if (!room) return;
 
-                conn.on('data', (data) => {
-                    if (data.type === 'JOIN') {
-                        clientConnections.set(conn.peer, conn);
-                        state.gameState.players.push({
-                            id: conn.peer,
-                            name: data.name,
-                            chips: INITIAL_CHIPS,
-                            currentBet: 0
-                        });
-                        broadcastState();
-                    } else {
-                        hostProcessAction(data, conn.peer);
-                    }
+            initPeer(null, () => {
+                hostConn = peer.connect(room, { reliable: true });
+                hostConn.on('open', () => {
+                    hostConn.send({ type: 'JOIN', name });
+                    vLobby.classList.add('hidden');
+                    vTable.classList.remove('hidden');
                 });
-
-                conn.on('close', () => {
-                    clientConnections.delete(conn.peer);
-                    state.gameState.players = state.gameState.players.filter(p => p.id !== conn.peer);
-                    broadcastState();
-                });
-            });
-        }
-
-        function broadcastState() {
-            updateUI();
-            const stateSnapshot = JSON.stringify(state.gameState);
-            clientConnections.forEach(conn => {
-                if (conn.open) {
-                    conn.send({ type: 'STATE_UPDATE', state: stateSnapshot });
-                }
-            });
-        }
-
-        function hostProcessAction(action, peerId = state.myId) {
-            const player = state.gameState.players.find(p => p.id === peerId);
-            
-            if (action.type === 'BET' && player) {
-                if (player.chips >= action.amount) {
-                    player.chips -= action.amount;
-                    player.currentBet += action.amount;
-                    state.gameState.pot += action.amount;
-                }
-            } 
-            else if (action.type === 'ASSIGN_POT' && state.isHost) {
-                const winner = state.gameState.players.find(p => p.id === action.winnerId);
-                if (winner) {
-                    winner.chips += state.gameState.pot;
-                    state.gameState.pot = 0;
-                    state.gameState.players.forEach(p => p.currentBet = 0);
-                }
-            }
-            else if (action.type === 'RESET_HAND' && state.isHost) {
-                state.gameState.players.forEach(p => {
-                    p.chips += p.currentBet;
-                    p.currentBet = 0;
-                });
-                state.gameState.pot = 0;
-            }
-
-            broadcastState();
-        }
-
-        function handleJoinRoom() {
-            const name = inputName.value.trim() || 'Jugador';
-            const hostId = inputRoomId.value.trim().toUpperCase();
-            
-            if (!hostId) return;
-
-            state.myName = name;
-            state.hostId = hostId;
-            state.isHost = false;
-
-            setupPeer(null, () => {
-                hostConnection = peer.connect(hostId, { reliable: true });
-                
-                hostConnection.on('open', () => {
-                    hostConnection.send({ type: 'JOIN', name: state.myName });
-                    displayId.innerText = hostId;
-                    switchView('table');
-                });
-
-                hostConnection.on('data', (data) => {
-                    if (data.type === 'STATE_UPDATE') {
-                        state.gameState = JSON.parse(data.state);
+                hostConn.on('data', data => {
+                    if (data.type === 'SYNC') {
+                        state.game = data.game;
+                        state.config = data.config;
                         updateUI();
-                    } else if (data.type === 'ERROR') {
-                        alert(data.message);
-                        disconnectAndReset();
                     }
-                });
-
-                hostConnection.on('close', () => {
-                    alert('Conexión perdida con el anfitrión.');
-                    disconnectAndReset();
                 });
             });
         }
 
-        function clientSendAction(action) {
-            if (state.isHost) {
-                hostProcessAction(action);
-            } else {
-                if (hostConnection && hostConnection.open) {
-                    hostConnection.send(action);
-                }
-            }
+        function initPeer(id, onOpen) {
+            peer = new Peer(id);
+            peer.on('open', onOpen);
+            peer.on('error', err => alert('Error: ' + err.type));
         }
 
-        // --- Renderizado UI ---
-        function updateUI() {
-            displayPot.innerText = state.gameState.pot.toLocaleString();
-            gridPlayers.innerHTML = '';
-            assignPotButtons.innerHTML = '';
+        // --- Lógica Host ---
+        function setupHostLogic() {
+            peer.on('connection', conn => {
+                conn.on('data', data => {
+                    if (data.type === 'JOIN' && state.game.players.length < MAX_PLAYERS) {
+                        clients.set(conn.peer, conn);
+                        addPlayer(conn.peer, data.name);
+                        sync();
+                    } else {
+                        handleAction(conn.peer, data);
+                    }
+                });
+                conn.on('close', () => {
+                    clients.delete(conn.peer);
+                    state.game.players = state.game.players.filter(p => p.id !== conn.peer);
+                    sync();
+                });
+            });
+        }
 
-            state.gameState.players.forEach(player => {
-                const isMe = player.id === state.myId;
-                const card = document.createElement('div');
-                card.className = `player-card ${isMe ? 'is-me' : ''}`;
+        function addPlayer(id, name) {
+            state.game.players.push({
+                id, name, 
+                chips: state.config.stack, 
+                betHand: 0, // Total apostado en la mano actual
+                betRound: 0 // Apuesta visible en mesa
+            });
+        }
+
+        function sync() {
+            updateUI();
+            const payload = { type: 'SYNC', game: state.game, config: state.config };
+            clients.forEach(c => c.send(payload));
+        }
+
+        function startNewHand() {
+            const pCount = state.game.players.length;
+            if (pCount < 2) return;
+
+            state.game.dealerIndex = (state.game.dealerIndex + 1) % pCount;
+            const sbIdx = (state.game.dealerIndex + 1) % pCount;
+            const bbIdx = (state.game.dealerIndex + 2) % pCount;
+
+            state.game.players.forEach(p => {
+                p.betRound = 0;
+                p.betHand = 0;
+            });
+            state.game.pot = 0;
+
+            takeBet(sbIdx, state.config.sb);
+            takeBet(bbIdx, state.config.bb);
+            sync();
+        }
+
+        function takeBet(pIdx, amount) {
+            const p = state.game.players[pIdx];
+            const actual = Math.min(p.chips, amount);
+            p.chips -= actual;
+            p.betRound += actual;
+            p.betHand += actual;
+            state.game.pot += actual;
+        }
+
+        function handleAction(pid, act) {
+            const p = state.game.players.find(x => x.id === pid);
+            if (!p) return;
+
+            if (act.type === 'BET') {
+                const amt = Math.min(p.chips, act.amount);
+                p.chips -= amt;
+                p.betRound += amt;
+                p.betHand += amt;
+                state.game.pot += amt;
+            } else if (act.type === 'ALLIN') {
+                const amt = p.chips;
+                p.chips = 0;
+                p.betRound += amt;
+                p.betHand += amt;
+                state.game.pot += amt;
+            } else if (act.type === 'WIN' && state.isHost) {
+                resolvePot(act.winnerId);
+            }
+            sync();
+        }
+
+        function resolvePot(winnerId) {
+            const winner = state.game.players.find(p => p.id === winnerId);
+            if (!winner) return;
+
+            const winnerContributed = winner.betHand;
+            let totalWin = 0;
+
+            state.game.players.forEach(p => {
+                const taken = Math.min(p.betHand, winnerContributed);
+                totalWin += taken;
+                p.betHand -= taken;
+            });
+
+            winner.chips += totalWin;
+            state.game.pot -= totalWin;
+            
+            state.game.players.forEach(p => p.betRound = 0);
+            sync();
+        }
+
+        // --- UI ---
+        function updateUI() {
+            document.getElementById('display-id').innerText = state.hostId || '---';
+            document.getElementById('stat-stack').innerText = state.config.stack;
+            document.getElementById('stat-blinds').innerText = `${state.config.sb}/${state.config.bb}`;
+            document.getElementById('pot-display').innerText = state.game.pot.toLocaleString();
+
+            gridPlayers.innerHTML = '';
+            listWinners.innerHTML = '';
+
+            state.game.players.forEach((p, idx) => {
+                const isMe = p.id === (peer ? peer.id : null);
+                const isDealer = idx === state.game.dealerIndex;
                 
+                const card = document.createElement('div');
+                card.className = `player-card ${isDealer ? 'is-dealer' : ''} ${isMe ? 'is-me' : ''}`;
                 card.innerHTML = `
-                    <div class="player-header">
-                        <span class="player-name">${player.name} ${isMe ? '(Tú)' : ''}</span>
-                        <span class="player-stack">${player.chips.toLocaleString()}</span>
+                    ${isDealer ? '<div class="dealer-badge">DEALER</div>' : ''}
+                    <div class="player-info">
+                        <span class="player-name">${p.name}</span>
+                        <span class="player-stack">${p.chips.toLocaleString()}</span>
                     </div>
-                    <div class="player-bet">Apuesta: <strong style="color:white">+${player.currentBet.toLocaleString()}</strong></div>
-                    <div class="bet-controls">
-                        <button class="bet-btn" onclick="clientSendAction({type: 'BET', amount: 10})" ${!isMe || player.chips < 10 ? 'disabled' : ''}>+10</button>
-                        <button class="bet-btn" onclick="clientSendAction({type: 'BET', amount: 50})" ${!isMe || player.chips < 50 ? 'disabled' : ''}>+50</button>
-                        <button class="bet-btn" onclick="clientSendAction({type: 'BET', amount: 100})" ${!isMe || player.chips < 100 ? 'disabled' : ''}>+100</button>
-                        <button class="bet-btn" onclick="clientSendAction({type: 'BET', amount: 500})" ${!isMe || player.chips < 500 ? 'disabled' : ''}>+500</button>
-                        <button class="bet-btn" onclick="clientSendAction({type: 'BET', amount: 1000})" ${!isMe || player.chips < 1000 ? 'disabled' : ''}>+1K</button>
-                        <button class="bet-btn" onclick="clientSendAction({type: 'BET', amount: 5000})" ${!isMe || player.chips < 5000 ? 'disabled' : ''}>+5K</button>
+                    <div class="bet-row">
+                        <span>Apostado:</span>
+                        <span class="current-bet">+${p.betRound.toLocaleString()}</span>
+                    </div>
+                    <div class="bet-grid ${!isMe || p.chips <= 0 ? 'hidden' : ''}">
+                        <button onclick="sendBet(50)">+50</button>
+                        <button onclick="sendBet(100)">+100</button>
+                        <button onclick="sendBet(500)">+500</button>
+                        <button class="all-in" onclick="sendAllIn()">ALL IN</button>
                     </div>
                 `;
                 gridPlayers.appendChild(card);
 
-                if (state.isHost) {
-                    const assignBtn = document.createElement('button');
-                    assignBtn.innerText = `Dar Pozo a ${player.name}`;
-                    assignBtn.className = 'secondary';
-                    assignBtn.style.flex = '1';
-                    assignBtn.style.minWidth = '120px';
-                    assignBtn.onclick = () => hostProcessAction({ type: 'ASSIGN_POT', winnerId: player.id });
-                    assignPotButtons.appendChild(assignBtn);
+                if (state.isHost && state.game.pot > 0) {
+                    const btnW = document.createElement('button');
+                    btnW.innerText = `Pago a ${p.name}`;
+                    btnW.className = 'secondary';
+                    btnW.onclick = () => handleAction(null, { type: 'WIN', winnerId: p.id });
+                    listWinners.appendChild(btnW);
                 }
             });
         }
 
-        initApp();
+        function sendBet(amount) {
+            if (state.isHost) handleAction(peer.id, { type: 'BET', amount });
+            else hostConn.send({ type: 'BET', amount });
+        }
+
+        function sendAllIn() {
+            if (state.isHost) handleAction(peer.id, { type: 'ALLIN' });
+            else hostConn.send({ type: 'ALLIN' });
+        }
     </script>
 </body>
 </html>
