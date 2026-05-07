@@ -6,7 +6,6 @@
     <title>Mesa de Poker Pro</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        /* --- Variables --- */
         :root {
             --bg: #0f172a;
             --card-bg: rgba(30, 41, 59, 0.85);
@@ -54,7 +53,6 @@
         button.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
         button.success { background: var(--success); color: white; }
 
-        /* --- UI Components --- */
         .lobby-container {
             max-width: 480px; width: 100%; margin: auto; padding: 2rem;
             background: var(--card-bg); backdrop-filter: blur(12px);
@@ -196,7 +194,6 @@
     </div>
 
     <script>
-        // --- Estado Global ---
         const s = {
             isHost: false, myId: null, hostId: null,
             cfg: { stack: 10000, sb: 50, bb: 100 },
@@ -212,17 +209,18 @@
 
         let peer, hostConn, clients = new Map();
 
-        // --- Eventos Iniciales ---
         document.getElementById('btn-create').onclick = () => {
             s.isHost = true;
             s.cfg.stack = parseInt(document.getElementById('c-stack').value) || 10000;
             s.cfg.sb = parseInt(document.getElementById('c-sb').value) || 50;
             s.cfg.bb = parseInt(document.getElementById('c-bb').value) || 100;
+            
             initPeer(Math.random().toString(36).substring(2,7).toUpperCase(), (id) => {
                 s.hostId = id;
                 addPlayer(id, document.getElementById('p-name').value || 'Host');
                 showTable();
                 setupHost();
+                render(); 
             });
         };
 
@@ -240,24 +238,30 @@
             });
         };
 
-        document.getElementById('ui-room').onclick = () => {
-            navigator.clipboard.writeText(s.hostId);
-            alert("ID Copiado");
+        document.getElementById('ui-room').onclick = async () => {
+            try {
+                await navigator.clipboard.writeText(s.hostId);
+                alert("ID Copiado");
+            } catch (err) {
+                alert("Tu ID es: " + s.hostId);
+            }
         };
 
         function initPeer(id, cb) {
-            peer = new Peer(id);
-            peer.on('open', pid => { s.myId = pid; cb(pid); });
-            peer.on('error', e => alert('Error: ' + e.type));
+            try {
+                peer = new Peer(id);
+                peer.on('open', pid => { s.myId = pid; cb(pid); });
+                peer.on('error', e => alert('Error de conexión: ' + e.type));
+            } catch (err) {
+                alert("Error al iniciar PeerJS. Revisa tu conexión.");
+            }
         }
 
         function showTable() {
             document.getElementById('view-lobby').classList.add('hidden');
             document.getElementById('view-table').classList.remove('hidden');
-            render();
         }
 
-        // --- Core Lógica Host ---
         function setupHost() {
             peer.on('connection', conn => {
                 conn.on('data', msg => {
@@ -289,9 +293,11 @@
             clients.forEach(c => c.send(payload));
         }
 
-        // --- Máquina de Estados ---
         window.hostStartHand = function() {
-            if(s.game.players.length < 2) return alert("Mínimo 2 jugadores.");
+            if(s.game.players.length < 2) {
+                alert("Necesitas al menos 2 jugadores para iniciar.");
+                return;
+            }
             s.game.phase = 'PREFLOP';
             s.game.pot = 0;
             s.game.currentBet = s.cfg.bb;
@@ -407,81 +413,86 @@
             s.game.players.forEach(p => { s.game.pot += p.betRound; p.betRound = 0; });
         }
 
-        // --- Cliente ---
         window.sendAction = function(type) {
             let payload = { type };
             if(type === 'RAISE') payload.amount = parseInt(document.getElementById('raise-amt').value);
             if(s.isHost) processAction(s.myId, payload); else hostConn.send(payload);
         };
 
-        // --- Renderizado ---
         function render() {
-            document.getElementById('ui-room').innerText = s.hostId || '---';
-            document.getElementById('ui-blinds').innerText = `${s.cfg.sb}/${s.cfg.bb}`;
-            document.getElementById('ui-phase').innerText = s.game.phase;
-            document.getElementById('ui-pot').innerText = s.game.pot.toLocaleString();
+            try {
+                document.getElementById('ui-room').innerText = s.hostId || '---';
+                document.getElementById('ui-blinds').innerText = `${s.cfg.sb}/${s.cfg.bb}`;
+                document.getElementById('ui-phase').innerText = s.game.phase;
+                document.getElementById('ui-pot').innerText = s.game.pot.toLocaleString();
 
-            const oppContainer = document.getElementById('opponents-container');
-            const hControls = document.getElementById('host-controls');
-            oppContainer.innerHTML = ''; 
-            
-            let myPlayer = null;
-
-            s.game.players.forEach((p, idx) => {
-                if(p.id === s.myId) { myPlayer = p; }
-                else {
-                    const isTurn = s.game.turnIdx === idx && s.game.phase !== 'SHOWDOWN' && s.game.phase !== 'WAITING';
-                    const isD = s.game.dealerIdx === idx;
-                    oppContainer.innerHTML += `
-                        <div class="opponent-card ${isTurn ? 'is-turn' : ''} ${p.status === 'FOLDED' ? 'folded' : ''}">
-                            ${isD ? '<div class="dealer-btn">D</div>' : ''}
-                            <div class="op-name">${p.name}</div>
-                            <div class="op-chips">${p.chips.toLocaleString()}</div>
-                            <div class="op-bet">${p.betRound > 0 ? '+'+p.betRound : ''}</div>
-                            <div class="op-status" style="color: ${p.status==='ACTIVE'?'var(--success)':'var(--danger)'}">${p.status}</div>
-                        </div>
-                    `;
-                }
-            });
-
-            if (s.isHost) {
-                hControls.classList.remove('hidden');
-                if (s.game.phase === 'WAITING') {
-                    hControls.innerHTML = `<button class="success" onclick="hostStartHand()">INICIAR MANO</button>`;
-                } else if (s.game.phase === 'SHOWDOWN') {
-                    let btns = s.game.players.filter(p => p.status !== 'FOLDED').map(p => 
-                        `<button class="success" onclick="hostAwardPot('${p.id}')">Dar a ${p.name}</button>`
-                    ).join('');
-                    btns += `<button class="danger" onclick="hostForceEnd()">FORZAR FIN</button>`;
-                    hControls.innerHTML = btns;
-                } else {
-                    hControls.innerHTML = `<button class="danger" onclick="hostForceEnd()" style="padding: 0.5rem; font-size: 0.8rem; min-width: 100px;">FORZAR FIN</button>`;
-                }
-            } else {
-                hControls.classList.add('hidden');
-            }
-
-            if(myPlayer) {
-                document.getElementById('hero-chips').innerText = myPlayer.chips.toLocaleString();
-                document.getElementById('hero-current-bet').innerText = myPlayer.betRound > 0 ? `+${myPlayer.betRound}` : '';
+                const oppContainer = document.getElementById('opponents-container');
+                const hControls = document.getElementById('host-controls');
+                oppContainer.innerHTML = ''; 
                 
-                const isMyTurn = s.game.turnIdx === s.game.players.findIndex(x => x.id === s.myId) && s.game.phase !== 'SHOWDOWN' && s.game.phase !== 'WAITING';
-                const actCtrl = document.getElementById('hero-actions');
-                const waitCtrl = document.getElementById('hero-waiting');
-                
-                if(isMyTurn && myPlayer.status === 'ACTIVE') {
-                    actCtrl.classList.remove('hidden'); waitCtrl.classList.add('hidden');
-                    const callAmt = s.game.currentBet - myPlayer.betRound;
-                    const btnCC = document.getElementById('btn-check-call');
-                    btnCC.innerText = callAmt > 0 ? `CALL ${callAmt}` : 'CHECK';
-                    const minRaise = s.game.currentBet === 0 ? s.cfg.bb : s.game.currentBet * 2;
-                    document.getElementById('raise-amt').min = minRaise;
-                    document.getElementById('raise-amt').value = minRaise;
+                let myPlayer = null;
+
+                s.game.players.forEach((p, idx) => {
+                    if(p.id === s.myId) { myPlayer = p; }
+                    else {
+                        const isTurn = s.game.turnIdx === idx && s.game.phase !== 'SHOWDOWN' && s.game.phase !== 'WAITING';
+                        const isD = s.game.dealerIdx === idx;
+                        oppContainer.innerHTML += `
+                            <div class="opponent-card ${isTurn ? 'is-turn' : ''} ${p.status === 'FOLDED' ? 'folded' : ''}">
+                                ${isD ? '<div class="dealer-btn">D</div>' : ''}
+                                <div class="op-name">${p.name}</div>
+                                <div class="op-chips">${p.chips.toLocaleString()}</div>
+                                <div class="op-bet">${p.betRound > 0 ? '+'+p.betRound : ''}</div>
+                                <div class="op-status" style="color: ${p.status==='ACTIVE'?'var(--success)':'var(--danger)'}">${p.status}</div>
+                            </div>
+                        `;
+                    }
+                });
+
+                if (s.isHost) {
+                    hControls.classList.remove('hidden');
+                    hControls.style.display = 'flex'; 
+                    
+                    if (s.game.phase === 'WAITING') {
+                        hControls.innerHTML = `<button class="success" onclick="hostStartHand()">INICIAR MANO</button>`;
+                    } else if (s.game.phase === 'SHOWDOWN') {
+                        let btns = s.game.players.filter(p => p.status !== 'FOLDED').map(p => 
+                            `<button class="success" onclick="hostAwardPot('${p.id}')">Dar a ${p.name}</button>`
+                        ).join('');
+                        btns += `<button class="danger" onclick="hostForceEnd()">FORZAR FIN</button>`;
+                        hControls.innerHTML = btns;
+                    } else {
+                        hControls.innerHTML = `<button class="danger" onclick="hostForceEnd()" style="padding: 0.5rem; font-size: 0.8rem; min-width: 100px;">FORZAR FIN</button>`;
+                    }
                 } else {
-                    actCtrl.classList.add('hidden'); waitCtrl.classList.remove('hidden');
-                    waitCtrl.innerText = myPlayer.status === 'FOLDED' ? 'Te has retirado' : 
-                                         (s.game.phase === 'WAITING' ? 'Esperando al Host...' : 'Esperando tu turno...');
+                    hControls.classList.add('hidden');
+                    hControls.style.display = 'none';
                 }
+
+                if(myPlayer) {
+                    document.getElementById('hero-chips').innerText = myPlayer.chips.toLocaleString();
+                    document.getElementById('hero-current-bet').innerText = myPlayer.betRound > 0 ? `+${myPlayer.betRound}` : '';
+                    
+                    const isMyTurn = s.game.turnIdx === s.game.players.findIndex(x => x.id === s.myId) && s.game.phase !== 'SHOWDOWN' && s.game.phase !== 'WAITING';
+                    const actCtrl = document.getElementById('hero-actions');
+                    const waitCtrl = document.getElementById('hero-waiting');
+                    
+                    if(isMyTurn && myPlayer.status === 'ACTIVE') {
+                        actCtrl.classList.remove('hidden'); waitCtrl.classList.add('hidden');
+                        const callAmt = s.game.currentBet - myPlayer.betRound;
+                        const btnCC = document.getElementById('btn-check-call');
+                        btnCC.innerText = callAmt > 0 ? `CALL ${callAmt}` : 'CHECK';
+                        const minRaise = s.game.currentBet === 0 ? s.cfg.bb : s.game.currentBet * 2;
+                        document.getElementById('raise-amt').min = minRaise;
+                        document.getElementById('raise-amt').value = minRaise;
+                    } else {
+                        actCtrl.classList.add('hidden'); waitCtrl.classList.remove('hidden');
+                        waitCtrl.innerText = myPlayer.status === 'FOLDED' ? 'Te has retirado' : 
+                                             (s.game.phase === 'WAITING' ? 'Esperando al Host...' : 'Esperando tu turno...');
+                    }
+                }
+            } catch (err) {
+                console.error("Error en renderizado: ", err);
             }
         }
     </script>
