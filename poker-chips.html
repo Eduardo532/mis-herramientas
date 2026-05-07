@@ -6,6 +6,7 @@
     <title>Mesa de Poker Pro</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
+        /* --- Variables --- */
         :root {
             --bg: #0f172a;
             --card-bg: rgba(30, 41, 59, 0.85);
@@ -53,6 +54,7 @@
         button.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
         button.success { background: var(--success); color: white; }
 
+        /* --- UI Components --- */
         .lobby-container {
             max-width: 480px; width: 100%; margin: auto; padding: 2rem;
             background: var(--card-bg); backdrop-filter: blur(12px);
@@ -66,17 +68,17 @@
         .header-bar {
             display: flex; justify-content: space-between; padding: 1rem;
             background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid var(--card-border);
-            font-size: 0.8rem; color: var(--text-muted);
+            font-size: 0.8rem; color: var(--text-muted); flex-shrink: 0;
         }
 
         .game-area {
             flex: 1; display: flex; flex-direction: column; align-items: center;
-            justify-content: space-between; padding: 2rem 1rem; position: relative;
+            padding: 2rem 1rem; position: relative; overflow-y: auto;
         }
 
         .opponents-ring {
             display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem;
-            width: 100%; max-width: 800px; z-index: 10;
+            width: 100%; max-width: 800px; margin-bottom: 2rem;
         }
 
         .opponent-card {
@@ -101,21 +103,21 @@
 
         .center-table {
             background: var(--table-green); border: 4px solid var(--table-border);
-            border-radius: 100px; width: 100%; max-width: 600px; min-height: 180px;
+            border-radius: 60px; width: 100%; max-width: 600px; min-height: 220px;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             box-shadow: inset 0 0 40px rgba(0,0,0,0.5); padding: 1.5rem; text-align: center;
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            margin: auto 0;
         }
 
         .phase-indicator { color: var(--accent); font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 0.5rem; }
         .pot-total { font-size: 3.5rem; font-weight: 900; color: white; text-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         
-        .host-actions { display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; justify-content: center; width: 100%; }
-        .host-actions button { width: auto; padding: 0.5rem 1rem; font-size: 0.85rem; margin: 0; }
+        .host-actions { display: flex; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap; justify-content: center; width: 100%; }
+        .host-actions button { width: auto; padding: 0.5rem 1rem; font-size: 0.85rem; margin: 0; min-width: 120px; }
 
         .hero-panel {
             background: rgba(15, 23, 42, 0.95); border-top: 1px solid var(--card-border);
-            padding: 1.5rem; z-index: 20; width: 100%;
+            padding: 1.5rem; z-index: 20; width: 100%; flex-shrink: 0; box-shadow: 0 -10px 20px rgba(0,0,0,0.3);
         }
 
         .hero-stats { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; max-width: 800px; margin-inline: auto; }
@@ -123,9 +125,7 @@
         .hero-info div:last-child { font-size: 1.8rem; font-weight: 900; color: var(--success); }
         .hero-bet { text-align: right; color: var(--warning); font-size: 1.2rem; font-weight: 700; }
 
-        .action-controls {
-            display: flex; gap: 0.5rem; max-width: 800px; margin: 0 auto;
-        }
+        .action-controls { display: flex; gap: 0.5rem; max-width: 800px; margin: 0 auto; }
         .action-controls button { flex: 1; padding: 1.2rem; font-size: 1.1rem; }
         
         .raise-wrapper { flex: 2; display: flex; gap: 0.5rem; }
@@ -186,7 +186,7 @@
                 <button class="secondary" id="btn-check-call" onclick="sendAction('CALL')">CHECK</button>
                 <div class="raise-wrapper">
                     <input type="number" id="raise-amt" step="10">
-                    <button class="success" onclick="sendRaise()">RAISE</button>
+                    <button class="success" onclick="sendAction('RAISE')">RAISE</button>
                 </div>
             </div>
             <div id="hero-waiting" style="text-align: center; color: var(--text-muted); font-style: italic;">
@@ -212,7 +212,7 @@
 
         let peer, hostConn, clients = new Map();
 
-        // --- Inicialización ---
+        // --- Eventos Iniciales ---
         document.getElementById('btn-create').onclick = () => {
             s.isHost = true;
             s.cfg.stack = parseInt(document.getElementById('c-stack').value) || 10000;
@@ -232,6 +232,7 @@
             initPeer(null, () => {
                 hostConn = peer.connect(room, { reliable: true });
                 hostConn.on('open', () => {
+                    s.hostId = room;
                     hostConn.send({ type: 'JOIN', name: document.getElementById('p-name').value || 'Jugador' });
                     showTable();
                 });
@@ -239,7 +240,10 @@
             });
         };
 
-        document.getElementById('ui-room').onclick = () => navigator.clipboard.writeText(s.hostId);
+        document.getElementById('ui-room').onclick = () => {
+            navigator.clipboard.writeText(s.hostId);
+            alert("ID Copiado");
+        };
 
         function initPeer(id, cb) {
             peer = new Peer(id);
@@ -250,6 +254,7 @@
         function showTable() {
             document.getElementById('view-lobby').classList.add('hidden');
             document.getElementById('view-table').classList.remove('hidden');
+            render();
         }
 
         // --- Core Lógica Host ---
@@ -284,9 +289,9 @@
             clients.forEach(c => c.send(payload));
         }
 
-        // --- Máquina de Estados Hold'em ---
-        function hostStartHand() {
-            if(s.game.players.length < 2) return;
+        // --- Máquina de Estados ---
+        window.hostStartHand = function() {
+            if(s.game.players.length < 2) return alert("Mínimo 2 jugadores.");
             s.game.phase = 'PREFLOP';
             s.game.pot = 0;
             s.game.currentBet = s.cfg.bb;
@@ -306,7 +311,20 @@
             forceBet(bbIdx, s.cfg.bb);
             ensureValidTurn();
             sync();
-        }
+        };
+
+        window.hostForceEnd = function() {
+            gatherBets();
+            s.game.phase = 'WAITING';
+            s.game.turnIdx = -1;
+            s.game.players.forEach(p => p.betRound = 0);
+            sync();
+        };
+
+        window.hostAwardPot = function(pid) {
+            const p = s.game.players.find(x => x.id === pid);
+            if(p) { p.chips += s.game.pot; s.game.pot = 0; s.game.phase = 'WAITING'; sync(); }
+        };
 
         function forceBet(idx, amt) {
             const p = s.game.players[idx];
@@ -349,8 +367,7 @@
 
         function advanceTurn() {
             checkAdvancePhase();
-            if(s.game.phase === 'SHOWDOWN') return;
-            
+            if(s.game.phase === 'SHOWDOWN' || s.game.phase === 'WAITING') return;
             s.game.turnIdx = (s.game.turnIdx + 1) % s.game.players.length;
             ensureValidTurn();
         }
@@ -368,11 +385,7 @@
             const unacted = actives.filter(p => !p.acted || p.betRound < s.game.currentBet);
             const nonFolded = s.game.players.filter(p => p.status !== 'FOLDED');
 
-            if(nonFolded.length === 1) {
-                gatherBets(); s.game.phase = 'SHOWDOWN'; return;
-            }
-
-            if(actives.length <= 1 && unacted.length === 0) {
+            if(nonFolded.length === 1 || (actives.length <= 1 && unacted.length === 0)) {
                 gatherBets(); s.game.phase = 'SHOWDOWN'; return;
             }
 
@@ -394,17 +407,12 @@
             s.game.players.forEach(p => { s.game.pot += p.betRound; p.betRound = 0; });
         }
 
-        function hostAwardPot(pid) {
-            const p = s.game.players.find(x => x.id === pid);
-            if(p) { p.chips += s.game.pot; s.game.pot = 0; s.game.phase = 'WAITING'; sync(); }
-        }
-
-        // --- Cliente Envío ---
-        function sendAction(type) {
+        // --- Cliente ---
+        window.sendAction = function(type) {
             let payload = { type };
             if(type === 'RAISE') payload.amount = parseInt(document.getElementById('raise-amt').value);
             if(s.isHost) processAction(s.myId, payload); else hostConn.send(payload);
-        }
+        };
 
         // --- Renderizado ---
         function render() {
@@ -415,7 +423,7 @@
 
             const oppContainer = document.getElementById('opponents-container');
             const hControls = document.getElementById('host-controls');
-            oppContainer.innerHTML = ''; hControls.innerHTML = '';
+            oppContainer.innerHTML = ''; 
             
             let myPlayer = null;
 
@@ -434,20 +442,24 @@
                         </div>
                     `;
                 }
-
-                if(s.isHost && (s.game.phase === 'SHOWDOWN' || s.game.phase === 'WAITING')) {
-                    hControls.classList.remove('hidden');
-                    if(s.game.phase === 'WAITING') {
-                        hControls.innerHTML = `<button class="success" onclick="hostStartHand()" style="width:100%">INICIAR MANO</button>`;
-                    } else {
-                        if(p.status !== 'FOLDED') {
-                            hControls.innerHTML += `<button onclick="hostAwardPot('${p.id}')">Dar Pozo a ${p.name}</button>`;
-                        }
-                    }
-                } else if(s.isHost) {
-                    hControls.classList.add('hidden');
-                }
             });
+
+            if (s.isHost) {
+                hControls.classList.remove('hidden');
+                if (s.game.phase === 'WAITING') {
+                    hControls.innerHTML = `<button class="success" onclick="hostStartHand()">INICIAR MANO</button>`;
+                } else if (s.game.phase === 'SHOWDOWN') {
+                    let btns = s.game.players.filter(p => p.status !== 'FOLDED').map(p => 
+                        `<button class="success" onclick="hostAwardPot('${p.id}')">Dar a ${p.name}</button>`
+                    ).join('');
+                    btns += `<button class="danger" onclick="hostForceEnd()">FORZAR FIN</button>`;
+                    hControls.innerHTML = btns;
+                } else {
+                    hControls.innerHTML = `<button class="danger" onclick="hostForceEnd()" style="padding: 0.5rem; font-size: 0.8rem; min-width: 100px;">FORZAR FIN</button>`;
+                }
+            } else {
+                hControls.classList.add('hidden');
+            }
 
             if(myPlayer) {
                 document.getElementById('hero-chips').innerText = myPlayer.chips.toLocaleString();
@@ -468,7 +480,7 @@
                 } else {
                     actCtrl.classList.add('hidden'); waitCtrl.classList.remove('hidden');
                     waitCtrl.innerText = myPlayer.status === 'FOLDED' ? 'Te has retirado' : 
-                                         (s.game.phase === 'WAITING' ? 'Esperando al Host...' : 'Esperando turno...');
+                                         (s.game.phase === 'WAITING' ? 'Esperando al Host...' : 'Esperando tu turno...');
                 }
             }
         }
