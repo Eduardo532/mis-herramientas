@@ -108,7 +108,13 @@ class PeerService {
   private sync() {
     if (!this.isHost) return;
     const msg: NetworkMessage = { type: 'SYNC', game: this.game, cfg: this.cfg };
-    this.connections.forEach(conn => conn.send(msg));
+
+    this.connections.forEach(conn => {
+      if (conn && conn.open) {
+        conn.send(msg);
+      }
+    });
+    
     this.emit({ game: this.game, cfg: this.cfg, myId: this.myId });
   }
 
@@ -209,10 +215,18 @@ class PeerService {
   private handleNetworkData(pid: string, data: any) {
     const msg = data as NetworkMessage;
     if (msg.type === 'JOIN') {
+      // Conectamos de vuelta con el cliente
       const conn = this.peer!.connect(pid, { reliable: true });
       this.connections.set(pid, conn);
       this.addPlayer(pid, msg.name);
-      this.sync();
+
+      conn.on('open', () => {
+        this.sync();
+      });
+      
+      if (conn.open) {
+        this.sync();
+      }
     } else if (msg.type === 'ACTION') {
       this.processAction(pid, msg.action);
     }
