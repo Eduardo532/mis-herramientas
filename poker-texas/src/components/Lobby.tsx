@@ -7,10 +7,12 @@ interface LobbyProps {
   onJoinRoom: (nick: string, roomId: string) => void;
 }
 
-export function Lobby({onCreateRoom, onJoinRoom }: LobbyProps) {  const [nick, setNick] = useState('');
+export function Lobby({ myId, onCreateRoom, onJoinRoom }: LobbyProps) {
+  const [nick, setNick] = useState('');
   const [roomCode, setRoomCode] = useState('');
   const [stack, setStack] = useState(10000);
   const [bb, setBb] = useState(100);
+  const peerReady = Boolean(myId);
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,6 +29,12 @@ export function Lobby({onCreateRoom, onJoinRoom }: LobbyProps) {  const [nick, s
       alert('Por favor, ingresa tu apodo y el código de la sala.');
       return;
     }
+
+    if (!peerReady) {
+      alert('La conexión todavía se está preparando. Intenta nuevamente en unos segundos.');
+      return;
+    }
+
     onJoinRoom(nick.trim(), roomCode.trim().toUpperCase());
   };
 
@@ -69,8 +77,18 @@ export function Lobby({onCreateRoom, onJoinRoom }: LobbyProps) {  const [nick, s
               autoComplete="off"
             />
           </div>
-          <button type="submit" style={{ ...btnStyle, background: '#38bdf8', color: '#0f172a' }}>
-            UNIRSE A SALA
+          <button
+            type="submit"
+            disabled={!peerReady}
+            style={{
+              ...btnStyle,
+              background: '#38bdf8',
+              color: '#0f172a',
+              opacity: peerReady ? 1 : 0.55,
+              cursor: peerReady ? 'pointer' : 'not-allowed'
+            }}
+          >
+            {peerReady ? 'UNIRSE A SALA' : 'PREPARANDO CONEXIÓN...'}
           </button>
         </form>
 

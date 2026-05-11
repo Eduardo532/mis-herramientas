@@ -26,6 +26,11 @@ class PeerService {
     return Math.random().toString(36).substring(2, 7).toUpperCase();
   }
 
+  private toRoomPeerId(roomCode: string): string {
+    const normalized = roomCode.trim().toUpperCase();
+    return normalized.startsWith('POKER-') ? `poker-${normalized.slice(6)}` : `poker-${normalized}`;
+  }
+
   // --- Inicialización y Suscripción ---
 
   async initLocalPeer(): Promise<string> {
@@ -33,20 +38,17 @@ class PeerService {
       return this.myId;
     }
 
-    const savedId = sessionStorage.getItem('poker_session_id');
     return new Promise((resolve, reject) => {
-      this.peer = savedId ? new Peer(savedId) : new Peer();
+      this.peer = new Peer();
       
       this.peer.on('open', (id) => {
         this.myId = id;
-        sessionStorage.setItem('poker_session_id', id);
         resolve(id);
       });
 
       this.peer.on('error', (err: any) => {
         console.error('PeerJS Error:', err);
         if (err.type === 'unavailable-id') {
-          sessionStorage.removeItem('poker_session_id');
           window.location.reload();
           return;
         }
@@ -81,19 +83,29 @@ class PeerService {
   async createRoom(nick: string, config: RoomConfig) {
     this.isHost = true;
     this.cfg = config;
+    this.connections.clear();
+    this.hostConn = null;
+    this.game = {
+      phase: 'WAITING',
+      pot: 0,
+      bet: 0,
+      dIdx: -1,
+      tIdx: -1,
+      players: []
+    };
     
     const shortId = this.generateShortId();
+    const peerId = this.toRoomPeerId(shortId);
     
     if (this.peer) {
       this.peer.destroy();
     }
     
-    this.peer = new Peer(shortId);
+    this.peer = new Peer(peerId);
 
     this.peer.on('open', (id) => {
       this.myId = id;
-      this.roomId = id;
-      sessionStorage.setItem('poker_session_id', id);
+      this.roomId = shortId;
       
       this.game.players = []; 
       this.addPlayer(id, nick);
@@ -116,7 +128,11 @@ class PeerService {
     this.peer.on('error', (err: any) => {
       if (err.type === 'unavailable-id') {
         this.createRoom(nick, config);
+        return;
       }
+
+      console.error('Host PeerJS Error:', err);
+      alert('No se pudo crear la sala. Intenta nuevamente.');
     });
   }
 
@@ -205,7 +221,7 @@ class PeerService {
 
     this.isHost = false;
     this.roomId = rid.trim().toUpperCase();
-    this.hostConn = this.peer.connect(this.roomId, { reliable: true });
+    this.hostConn = this.peer.connect(this.toRoomPeerId(this.roomId), { reliable: true });
     
     this.hostConn.on('open', () => {
       this.hostConn?.send({ type: 'JOIN', name: nick });
