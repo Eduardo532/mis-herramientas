@@ -1,5 +1,5 @@
 import { Peer, DataConnection } from 'peerjs';
-import { GameState, RoomConfig, Player, ActionPayload, AppUpdate, NetworkMessage } from '../types/poker';
+import { GameState, RoomConfig, ActionPayload, AppUpdate, NetworkMessage } from '../types/poker';
 
 class PeerService {
   private peer: Peer | null = null;
@@ -31,16 +31,16 @@ class PeerService {
   async initLocalPeer(): Promise<string> {
     const savedId = sessionStorage.getItem('poker_session_id');
     return new Promise((resolve) => {
-      // Corrección de tipos: O pasamos el ID o nada
       this.peer = savedId ? new Peer(savedId) : new Peer();
       
-      this.peer.on('open', (id) => {
+      this.peer.on('open', (id: any) => {
         this.myId = id;
         sessionStorage.setItem('poker_session_id', id);
         resolve(id);
       });
 
-      this.peer.on('error', (err) => {
+      // Tipamos explícitamente err como any para leer err.type sin alertas estrictas
+      this.peer.on('error', (err: any) => {
         console.error('PeerJS Error:', err);
         if (err.type === 'unavailable-id') {
           sessionStorage.clear();
@@ -52,7 +52,9 @@ class PeerService {
 
   subscribe(callback: (update: AppUpdate) => void) {
     this.subscribers.push(callback);
-    return () => { this.subscribers = this.subscribers.filter(s => s !== callback); };
+    return () => { 
+      this.subscribers = this.subscribers.filter(s => s !== callback); 
+    };
   }
 
   private emit(update: AppUpdate) {
@@ -65,15 +67,15 @@ class PeerService {
     this.isHost = true;
     this.cfg = config;
     
-    // Generar ID amigable
     const shortId = this.generateShortId();
     
-    // Reiniciar el Peer con el ID corto
-    if (this.peer) this.peer.destroy();
+    if (this.peer) {
+      this.peer.destroy();
+    }
     
     this.peer = new Peer(shortId);
 
-    this.peer.on('open', (id) => {
+    this.peer.on('open', (id: any) => {
       this.myId = id;
       this.roomId = id;
       sessionStorage.setItem('poker_session_id', id);
@@ -81,7 +83,7 @@ class PeerService {
       this.game.players = []; 
       this.addPlayer(id, nick);
 
-      this.peer?.on('connection', (conn) => {
+      this.peer?.on('connection', (conn: any) => {
         conn.on('data', (data: any) => this.handleNetworkData(conn.peer, data));
         conn.on('close', () => this.handleDisconnect(conn.peer));
       });
@@ -91,12 +93,15 @@ class PeerService {
         roomId: this.roomId, 
         game: this.game, 
         cfg: this.cfg, 
-        myId: this.myId
+        myId: this.myId 
       });
     });
 
-    this.peer.on('error', (err) => {
-      if (err.type === 'unavailable-id') this.createRoom(nick, config);
+    // Tipamos explícitamente err como any
+    this.peer.on('error', (err: any) => {
+      if (err.type === 'unavailable-id') {
+        this.createRoom(nick, config);
+      }
     });
   }
 
@@ -104,7 +109,7 @@ class PeerService {
     if (!this.isHost) return;
     const msg: NetworkMessage = { type: 'SYNC', game: this.game, cfg: this.cfg };
     this.connections.forEach(conn => conn.send(msg));
-    this.emit({ game: this.game, cfg: this.cfg });
+    this.emit({ game: this.game, cfg: this.cfg, myId: this.myId });
   }
 
   hostStartHand() {
@@ -173,11 +178,7 @@ class PeerService {
     
     this.hostConn.on('open', () => {
       this.hostConn?.send({ type: 'JOIN', name: nick });
-      this.emit({ 
-        view: 'GAME', 
-        roomId: this.roomId, 
-        myId: this.myId
-});
+      this.emit({ view: 'GAME', roomId: this.roomId, myId: this.myId });
     });
 
     this.hostConn.on('data', (data: any) => {
@@ -185,7 +186,7 @@ class PeerService {
       if (msg.type === 'SYNC') {
         this.game = msg.game;
         this.cfg = msg.cfg;
-        this.emit({ game: this.game, cfg: this.cfg });
+        this.emit({ game: this.game, cfg: this.cfg, myId: this.myId });
       }
     });
 
@@ -224,7 +225,13 @@ class PeerService {
       existing.name = name;
     } else {
       this.game.players.push({
-        id, name, chips: this.cfg.stack, bRound: 0, status: 'ACTIVE', active: true, acted: false
+        id, 
+        name, 
+        chips: this.cfg.stack, 
+        bRound: 0, 
+        status: 'ACTIVE', 
+        active: true, 
+        acted: false
       });
     }
   }
@@ -245,14 +252,19 @@ class PeerService {
     if (act.t === 'CALL') {
       const diff = this.game.bet - p.bRound;
       const take = Math.min(p.chips, diff);
-      p.chips -= take; p.bRound += take;
+      p.chips -= take; 
+      p.bRound += take;
       if (p.chips === 0) p.status = 'ALLIN';
     }
     if (act.t === 'RAISE') {
       const add = act.v - p.bRound;
       if (p.chips >= add && act.v > this.game.bet) {
-        p.chips -= add; p.bRound = act.v; this.game.bet = act.v;
-        this.game.players.forEach(x => { if (x !== p && x.status === 'ACTIVE') x.acted = false; });
+        p.chips -= add; 
+        p.bRound = act.v; 
+        this.game.bet = act.v;
+        this.game.players.forEach(x => { 
+          if (x !== p && x.status === 'ACTIVE') x.acted = false; 
+        });
       }
     }
     this.advanceTurn();
@@ -262,7 +274,9 @@ class PeerService {
   private advanceTurn() {
     const actives = this.game.players.filter(p => p.status === 'ACTIVE');
     const waiting = actives.filter(p => !p.acted || p.bRound < this.game.bet);
-    const notFolded = this.game.players.filter(p => !['FOLDED', 'OUT'].includes(p.status));
+    
+    // Comparación directa y segura sin usar .includes() para compatibilidad estricta
+    const notFolded = this.game.players.filter(p => p.status !== 'FOLDED' && p.status !== 'OUT');
 
     if (notFolded.length === 1 || (actives.length === 0 && waiting.length === 0)) {
       this.collectPot();
@@ -290,14 +304,18 @@ class PeerService {
 
   private ensureValidTurn() {
     let count = 0;
-    while (this.game.players[this.game.tIdx].status !== 'ACTIVE' && count < 15) {
+    // Agregamos encadenamiento opcional ?. por máxima robustez de acceso
+    while (this.game.players[this.game.tIdx]?.status !== 'ACTIVE' && count < 15) {
       this.game.tIdx = (this.game.tIdx + 1) % this.game.players.length;
       count++;
     }
   }
 
   private collectPot() {
-    this.game.players.forEach(p => { this.game.pot += p.bRound; p.bRound = 0; });
+    this.game.players.forEach(p => { 
+      this.game.pot += p.bRound; 
+      p.bRound = 0; 
+    });
   }
 }
 
