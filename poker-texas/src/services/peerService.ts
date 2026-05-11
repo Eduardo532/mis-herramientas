@@ -33,13 +33,12 @@ class PeerService {
     return new Promise((resolve) => {
       this.peer = savedId ? new Peer(savedId) : new Peer();
       
-      this.peer.on('open', (id: any) => {
+      this.peer.on('open', (id) => {
         this.myId = id;
         sessionStorage.setItem('poker_session_id', id);
         resolve(id);
       });
 
-      // Tipamos explícitamente err como any para leer err.type sin alertas estrictas
       this.peer.on('error', (err: any) => {
         console.error('PeerJS Error:', err);
         if (err.type === 'unavailable-id') {
@@ -75,7 +74,7 @@ class PeerService {
     
     this.peer = new Peer(shortId);
 
-    this.peer.on('open', (id: any) => {
+    this.peer.on('open', (id) => {
       this.myId = id;
       this.roomId = id;
       sessionStorage.setItem('poker_session_id', id);
@@ -83,8 +82,9 @@ class PeerService {
       this.game.players = []; 
       this.addPlayer(id, nick);
 
-      this.peer?.on('connection', (conn: any) => {
-        conn.on('data', (data: any) => this.handleNetworkData(conn.peer, data));
+      this.peer?.on('connection', (conn) => {
+        // CORRECCIÓN CRÍTICA: Pasamos el objeto de conexión completo (conn)
+        conn.on('data', (data: any) => this.handleNetworkData(conn, data));
         conn.on('close', () => this.handleDisconnect(conn.peer));
       });
 
@@ -97,7 +97,6 @@ class PeerService {
       });
     });
 
-    // Tipamos explícitamente err como any
     this.peer.on('error', (err: any) => {
       if (err.type === 'unavailable-id') {
         this.createRoom(nick, config);
@@ -108,7 +107,7 @@ class PeerService {
   private sync() {
     if (!this.isHost) return;
     const msg: NetworkMessage = { type: 'SYNC', game: this.game, cfg: this.cfg };
-
+    
     this.connections.forEach(conn => {
       if (conn && conn.open) {
         conn.send(msg);
@@ -212,23 +211,17 @@ class PeerService {
 
   // --- Motor de Reglas ---
 
-  private handleNetworkData(pid: string, data: any) {
+  // CORRECCIÓN CRÍTICA: Recibimos la conexión bidireccional existente
+  private handleNetworkData(conn: DataConnection, data: any) {
     const msg = data as NetworkMessage;
     if (msg.type === 'JOIN') {
-      // Conectamos de vuelta con el cliente
-      const conn = this.peer!.connect(pid, { reliable: true });
+      const pid = conn.peer;
+      // Reutilizamos la conexión ya abierta para comunicación instantánea
       this.connections.set(pid, conn);
       this.addPlayer(pid, msg.name);
-
-      conn.on('open', () => {
-        this.sync();
-      });
-      
-      if (conn.open) {
-        this.sync();
-      }
+      this.sync();
     } else if (msg.type === 'ACTION') {
-      this.processAction(pid, msg.action);
+      this.processAction(conn.peer, msg.action);
     }
   }
 
@@ -289,7 +282,6 @@ class PeerService {
     const actives = this.game.players.filter(p => p.status === 'ACTIVE');
     const waiting = actives.filter(p => !p.acted || p.bRound < this.game.bet);
     
-    // Comparación directa y segura sin usar .includes() para compatibilidad estricta
     const notFolded = this.game.players.filter(p => p.status !== 'FOLDED' && p.status !== 'OUT');
 
     if (notFolded.length === 1 || (actives.length === 0 && waiting.length === 0)) {
@@ -318,7 +310,6 @@ class PeerService {
 
   private ensureValidTurn() {
     let count = 0;
-    // Agregamos encadenamiento opcional ?. por máxima robustez de acceso
     while (this.game.players[this.game.tIdx]?.status !== 'ACTIVE' && count < 15) {
       this.game.tIdx = (this.game.tIdx + 1) % this.game.players.length;
       count++;

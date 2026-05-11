@@ -18,13 +18,11 @@ export function HeroPanel({ game, myId, roomId, bb, onAction }: HeroPanelProps) 
   const isMyTurn = game.tIdx !== -1 && game.players[game.tIdx]?.id === myId;
   const canPlay = isMyTurn && me.status === 'ACTIVE' && game.phase !== 'SHOWDOWN' && game.phase !== 'WAITING';
   
-  // Cálculo de la diferencia para igualar
   const callAmount = game.bet - me.bRound;
   const isCheck = callAmount <= 0;
 
   return (
     <div style={heroContainerStyle}>
-      {/* Información del Jugador y Sala */}
       <div style={topRowStyle}>
         <div style={{ textAlign: 'left' }}>
           <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 800 }}>SALA #{roomId}</div>
@@ -36,7 +34,6 @@ export function HeroPanel({ game, myId, roomId, bb, onAction }: HeroPanelProps) 
         </div>
       </div>
 
-      {/* Controles de Acción */}
       <div style={{ minHeight: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {canPlay ? (
           <div style={{ width: '100%' }}>
@@ -56,7 +53,11 @@ export function HeroPanel({ game, myId, roomId, bb, onAction }: HeroPanelProps) 
             </div>
 
             <div style={{ ...actionRowStyle, marginTop: '10px' }}>
+              {/* CORRECCIÓN DE ACCESIBILIDAD Y AUTOFILL */}
+              <label htmlFor="raiseAmountInput" style={{ display: 'none' }}>Monto a subir</label>
               <input 
+                id="raiseAmountInput"
+                name="raiseAmountInput"
                 type="number" 
                 value={raiseVal} 
                 step={bb}
@@ -111,8 +112,7 @@ const btnBase: React.CSSProperties = {
   fontWeight: 900,
   fontSize: '1rem',
   cursor: 'pointer',
-  color: 'white',
-  transition: 'transform 0.1s active'
+  color: 'white'
 };
 
 const raiseInputStyle: React.CSSProperties = {
