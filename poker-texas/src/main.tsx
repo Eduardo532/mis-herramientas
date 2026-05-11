@@ -29,19 +29,15 @@ function PokerApp() {
 
   // --- Efecto de Inicialización y Suscripción P2P ---
   useEffect(() => {
-    // Inicializar el ID técnico persistente del dispositivo local
-    peerService.initLocalPeer().then((id) => setMyId(id));
-
-    // Suscribirse de forma reactiva a los cambios que lleguen por la red
     const unsubscribe = peerService.subscribe((newState) => {
-      if (newState.game) setGameState(newState.game);
-      if (newState.cfg) setCfg(newState.cfg);
+      // Actualizamos cada pieza de estado solo si viene en el mensaje
+      if (newState.game) setGameState({ ...newState.game }); // Forzamos re-render
+      if (newState.cfg) setCfg({ ...newState.cfg });
       if (newState.roomId) setRoomId(newState.roomId);
       if (newState.view) setView(newState.view);
-    if (newState.myId) setMyId(newState.myId); // <--- Añade esta línea mágica
-});
-
-    return () => unsubscribe();
+      if (newState.myId) setMyId(newState.myId);
+    });
+    return unsubscribe;
   }, []);
 
   // --- Controladores de Acción del Usuario ---

@@ -57,7 +57,11 @@ class PeerService {
   }
 
   private emit(update: AppUpdate) {
-    this.subscribers.forEach(s => s(update));
+    const freshUpdate = {
+      ...update,
+      game: update.game ? { ...update.game, players: [...update.game.players] } : undefined
+    };
+    this.subscribers.forEach(s => s(freshUpdate));
   }
 
   // --- Lógica de Host (Servidor) ---
@@ -106,7 +110,12 @@ class PeerService {
 
   private sync() {
     if (!this.isHost) return;
-    const msg: NetworkMessage = { type: 'SYNC', game: this.game, cfg: this.cfg };
+    
+    const msg: NetworkMessage = { 
+      type: 'SYNC', 
+      game: JSON.parse(JSON.stringify(this.game)), 
+      cfg: { ...this.cfg } 
+    };
     
     this.connections.forEach(conn => {
       if (conn && conn.open) {
@@ -211,15 +220,15 @@ class PeerService {
 
   // --- Motor de Reglas ---
 
-  // CORRECCIÓN CRÍTICA: Recibimos la conexión bidireccional existente
-  private handleNetworkData(conn: DataConnection, data: any) {
+ private handleNetworkData(conn: DataConnection, data: any) {
     const msg = data as NetworkMessage;
     if (msg.type === 'JOIN') {
       const pid = conn.peer;
-      // Reutilizamos la conexión ya abierta para comunicación instantánea
       this.connections.set(pid, conn);
       this.addPlayer(pid, msg.name);
-      this.sync();
+      
+      setTimeout(() => this.sync(), 500);
+      
     } else if (msg.type === 'ACTION') {
       this.processAction(conn.peer, msg.action);
     }
