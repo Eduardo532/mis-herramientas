@@ -47,7 +47,9 @@ jobs:
       - name: Prepare final artifact directory
         run: |
           mkdir -p public_html/poker-texas
-          find . -maxdepth 1 -name "*.html" -exec cp {} public_html/ \;
+          # Copia tus herramientas estáticas de la raíz
+          cp *.html public_html/
+          # Copia el build de poker de forma limpia
           cp -r poker-texas/dist/* public_html/poker-texas/
 
       # --- Despliegue en GitHub Pages ---
