@@ -7,8 +7,7 @@ interface LobbyProps {
   onJoinRoom: (nick: string, roomId: string) => void;
 }
 
-export function Lobby({ myId, onCreateRoom, onJoinRoom }: LobbyProps) {
-  const [nick, setNick] = useState('');
+export function Lobby({onCreateRoom, onJoinRoom }: LobbyProps) {  const [nick, setNick] = useState('');
   const [roomCode, setRoomCode] = useState('');
   const [stack, setStack] = useState(10000);
   const [bb, setBb] = useState(100);
