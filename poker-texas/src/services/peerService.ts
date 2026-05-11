@@ -29,8 +29,12 @@ class PeerService {
   // --- Inicialización y Suscripción ---
 
   async initLocalPeer(): Promise<string> {
+    if (this.peer && !this.peer.destroyed && this.myId) {
+      return this.myId;
+    }
+
     const savedId = sessionStorage.getItem('poker_session_id');
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       this.peer = savedId ? new Peer(savedId) : new Peer();
       
       this.peer.on('open', (id) => {
@@ -42,9 +46,17 @@ class PeerService {
       this.peer.on('error', (err: any) => {
         console.error('PeerJS Error:', err);
         if (err.type === 'unavailable-id') {
-          sessionStorage.clear();
+          sessionStorage.removeItem('poker_session_id');
           window.location.reload();
+          return;
         }
+
+        if (err.type === 'peer-unavailable' && !this.isHost) {
+          alert('No se pudo encontrar esa sala. Revisa el código y que el host siga conectado.');
+          return;
+        }
+
+        reject(err);
       });
     });
   }
@@ -186,13 +198,17 @@ class PeerService {
   // --- Lógica de Cliente (Jugador) ---
 
   joinRoom(nick: string, rid: string) {
+    if (!this.peer || this.peer.destroyed || !this.myId) {
+      alert('La conexión todavía no está lista. Intenta unirte nuevamente en unos segundos.');
+      return;
+    }
+
     this.isHost = false;
-    this.roomId = rid;
-    this.hostConn = this.peer!.connect(rid, { reliable: true });
+    this.roomId = rid.trim().toUpperCase();
+    this.hostConn = this.peer.connect(this.roomId, { reliable: true });
     
     this.hostConn.on('open', () => {
       this.hostConn?.send({ type: 'JOIN', name: nick });
-      this.emit({ view: 'GAME', roomId: this.roomId, myId: this.myId });
     });
 
     this.hostConn.on('data', (data: any) => {
@@ -200,8 +216,12 @@ class PeerService {
       if (msg.type === 'SYNC') {
         this.game = msg.game;
         this.cfg = msg.cfg;
-        this.emit({ game: this.game, cfg: this.cfg, myId: this.myId });
+        this.emit({ view: 'GAME', roomId: this.roomId, game: this.game, cfg: this.cfg, myId: this.myId });
       }
+    });
+
+    this.hostConn.on('error', () => {
+      alert('No se pudo conectar con la sala. Revisa que el código sea correcto y que el host mantenga la página abierta.');
     });
 
     this.hostConn.on('close', () => {
