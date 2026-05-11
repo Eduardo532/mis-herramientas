@@ -9,6 +9,7 @@
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/9701/9701587.png">
 
     <style>
+        /* --- Variables globales --- */
         :root {
             --bg: #0f172a;
             --card-bg: rgba(30, 41, 59, 0.7);
@@ -17,6 +18,7 @@
             --text-secondary: #94a3b8;
         }
 
+        /* --- Estilos base --- */
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: var(--bg);
@@ -58,6 +60,7 @@
             letter-spacing: 0.5px;
         }
 
+        /* --- Cuadrícula y tarjetas --- */
         .grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -129,6 +132,7 @@
             color: var(--bg);
         }
 
+        /* --- Adaptabilidad móvil --- */
         @media (max-width: 480px) {
             h1 { font-size: 1.8rem; }
             .main-logo { width: 120px; height: 120px; }
@@ -144,7 +148,6 @@
     </header>
 
     <div class="grid">
-        
         <a href="calculadora ratio cafe.html" class="card">
             <div class="card-content">
                 <div class="icon-circle">☕</div>
@@ -169,14 +172,13 @@
             <div class="arrow">➜</div>
         </a>
 
-        <a href="poker-chips.html" class="card">
+        <a href="poker-texas/" class="card">
             <div class="card-content">
                 <div class="icon-circle">🃏</div>
-                <span class="card-title">Mesa de Fichas</span>
+                <span class="card-title">Mesa de Poker Pro</span>
             </div>
             <div class="arrow">➜</div>
         </a>
-
     </div>
 
 </body>

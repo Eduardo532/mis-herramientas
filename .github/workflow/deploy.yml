@@ -1,0 +1,64 @@
+name: Deploy Hub and Poker SPA
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      # --- Checkout e Inicialización ---
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: poker-texas/package.json
+
+      # --- Compilación de la SPA ---
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./poker-texas
+
+      - name: Build Poker SPA
+        run: npm run build
+        working-directory: ./poker-texas
+
+      # --- Unificación de Archivos Estáticos ---
+      - name: Prepare final artifact directory
+        run: |
+          mkdir -p public_html/poker-texas
+          find . -maxdepth 1 -name "*.html" -exec cp {} public_html/ \;
+          cp -r poker-texas/dist/* public_html/poker-texas/
+
+      # --- Despliegue en GitHub Pages ---
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public_html
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
