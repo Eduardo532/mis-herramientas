@@ -38,7 +38,7 @@ function PokerApp() {
       if (newState.cfg) setCfg(newState.cfg);
       if (newState.roomId) setRoomId(newState.roomId);
       if (newState.view) setView(newState.view);
-      if (newState.myId) setMyId(newState.myId); // <--- Añade esta línea mágica
+    if (newState.myId) setMyId(newState.myId); // <--- Añade esta línea mágica
 });
 
     return () => unsubscribe();
