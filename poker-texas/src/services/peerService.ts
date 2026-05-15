@@ -1,6 +1,19 @@
 import { Peer, DataConnection } from 'peerjs';
 import { GameState, RoomConfig, ActionPayload, AppUpdate, NetworkMessage } from '../types/poker';
 
+// --- Configuración de Red ---
+const PEER_CONFIG = {
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' }
+    ]
+  }
+};
+
 class PeerService {
   private peer: Peer | null = null;
   private connections: Map<string, DataConnection> = new Map();
@@ -39,7 +52,7 @@ class PeerService {
     }
 
     return new Promise((resolve, reject) => {
-      this.peer = new Peer();
+      this.peer = new Peer(PEER_CONFIG);
       
       this.peer.on('open', (id) => {
         this.myId = id;
@@ -47,7 +60,6 @@ class PeerService {
       });
 
       this.peer.on('error', (err: any) => {
-        console.error('PeerJS Error:', err);
         if (err.type === 'unavailable-id') {
           window.location.reload();
           return;
@@ -83,6 +95,7 @@ class PeerService {
   async createRoom(nick: string, config: RoomConfig) {
     this.isHost = true;
     this.cfg = config;
+    this.connections.forEach(conn => conn.close());
     this.connections.clear();
     this.hostConn = null;
     this.game = {
@@ -101,39 +114,39 @@ class PeerService {
       this.peer.destroy();
     }
     
-    this.peer = new Peer(peerId);
+    setTimeout(() => {
+      this.peer = new Peer(peerId, PEER_CONFIG);
 
-    this.peer.on('open', (id) => {
-      this.myId = id;
-      this.roomId = shortId;
-      
-      this.game.players = []; 
-      this.addPlayer(id, nick);
+      this.peer.on('open', (id) => {
+        this.myId = id;
+        this.roomId = shortId;
+        
+        this.game.players = []; 
+        this.addPlayer(id, nick);
 
-      this.peer?.on('connection', (conn) => {
-        // CORRECCIÓN CRÍTICA: Pasamos el objeto de conexión completo (conn)
-        conn.on('data', (data: any) => this.handleNetworkData(conn, data));
-        conn.on('close', () => this.handleDisconnect(conn.peer));
+        this.peer?.on('connection', (conn) => {
+          conn.on('data', (data: any) => this.handleNetworkData(conn, data));
+          conn.on('close', () => this.handleDisconnect(conn.peer));
+          conn.on('error', () => this.handleDisconnect(conn.peer));
+        });
+
+        this.emit({ 
+          view: 'GAME', 
+          roomId: this.roomId, 
+          game: this.game, 
+          cfg: this.cfg, 
+          myId: this.myId 
+        });
       });
 
-      this.emit({ 
-        view: 'GAME', 
-        roomId: this.roomId, 
-        game: this.game, 
-        cfg: this.cfg, 
-        myId: this.myId 
+      this.peer.on('error', (err: any) => {
+        if (err.type === 'unavailable-id') {
+          this.createRoom(nick, config);
+          return;
+        }
+        alert('No se pudo crear la sala. Intenta nuevamente.');
       });
-    });
-
-    this.peer.on('error', (err: any) => {
-      if (err.type === 'unavailable-id') {
-        this.createRoom(nick, config);
-        return;
-      }
-
-      console.error('Host PeerJS Error:', err);
-      alert('No se pudo crear la sala. Intenta nuevamente.');
-    });
+    }, 200);
   }
 
   private sync() {
@@ -256,7 +269,7 @@ class PeerService {
 
   // --- Motor de Reglas ---
 
- private handleNetworkData(conn: DataConnection, data: any) {
+  private handleNetworkData(conn: DataConnection, data: any) {
     const msg = data as NetworkMessage;
     if (msg.type === 'JOIN') {
       const pid = conn.peer;
