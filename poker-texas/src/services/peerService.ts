@@ -52,15 +52,19 @@ class PeerService {
     }
 
     return new Promise((resolve, reject) => {
-      this.peer = new Peer(PEER_CONFIG);
+      const savedId = localStorage.getItem('poker_peer_id');
+      
+      this.peer = savedId ? new Peer(savedId, PEER_CONFIG) : new Peer(PEER_CONFIG);
       
       this.peer.on('open', (id) => {
+        localStorage.setItem('poker_peer_id', id);
         this.myId = id;
         resolve(id);
       });
 
       this.peer.on('error', (err: any) => {
         if (err.type === 'unavailable-id') {
+          localStorage.removeItem('poker_peer_id');
           window.location.reload();
           return;
         }
@@ -267,19 +271,30 @@ class PeerService {
     }
   }
 
+  requestSync() {
+    if (!this.isHost && this.hostConn && this.hostConn.open) {
+      this.hostConn.send({ type: 'REQUEST_SYNC' });
+    }
+  }
+
   // --- Motor de Reglas ---
 
   private handleNetworkData(conn: DataConnection, data: any) {
     const msg = data as NetworkMessage;
+    
     if (msg.type === 'JOIN') {
       const pid = conn.peer;
       this.connections.set(pid, conn);
       this.addPlayer(pid, msg.name);
-      
       setTimeout(() => this.sync(), 500);
       
     } else if (msg.type === 'ACTION') {
       this.processAction(conn.peer, msg.action);
+
+    } else if (msg.type === 'REQUEST_SYNC') {
+      if (conn && conn.open) {
+        conn.send({ type: 'SYNC', game: this.game, cfg: this.cfg });
+      }
     }
   }
 
