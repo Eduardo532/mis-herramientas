@@ -22,9 +22,12 @@ export const AddAnime: React.FC = () => {
 
     if (jikanData) {
       const newAnime: Omit<Anime, 'id'> = {
+        malId: jikanData.mal_id,
         title: jikanData.title,
         genres: jikanData.genres ? jikanData.genres.map((g: any) => g.name).join(', ') : 'Sin clasificar',
         episodes: jikanData.episodes || 0,
+        durationPerEpisode: parseInt(jikanData.duration) || 0,
+        isMovie: jikanData.type === 'Movie',
         imageUrl: jikanData.images.jpg.large_image_url,
         synopsis: jikanData.synopsis || 'Sinopsis no disponible.',
         score: jikanData.score || 0,
@@ -41,7 +44,7 @@ export const AddAnime: React.FC = () => {
     }
     
     setIsLoading(false);
-    setTimeout(() => setMessage({ text: '', type: '' }), 5000); // Limpiar mensaje a los 5 seg
+    setTimeout(() => setMessage({ text: '', type: '' }), 5000);
   };
 
   return (

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAnimeStore } from '../store/animeStore';
-import { PieChart, Clock, BarChart3, TrendingUp } from 'lucide-react';
+import { PieChart, Clock, TrendingUp } from 'lucide-react';
 
 export const Stats: React.FC = () => {
   const { animes } = useAnimeStore();
