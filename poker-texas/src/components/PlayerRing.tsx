@@ -24,14 +24,24 @@ export function PlayerRing({ players, tIdx, dIdx, myId, isHost, onKick }: Player
         });
       }
     };
+
+    const observer = typeof ResizeObserver !== 'undefined' && containerRef.current
+      ? new ResizeObserver(updateSize)
+      : null;
+
+    if (containerRef.current) observer?.observe(containerRef.current);
+
     window.addEventListener('resize', updateSize);
     updateSize();
-    return () => window.removeEventListener('resize', updateSize);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', updateSize);
+    };
   }, []);
 
-  // Radios de la elipse (ajustados para dejar margen a los avatares)
-  const RX = (dimensions.w / 2) - 50;
-  const RY = (dimensions.h / 2) - 55;
+  // Radios de la elipse con margen para avatar, apuesta, texto y escala del turno.
+  const RX = Math.max(0, (dimensions.w / 2) - 78);
+  const RY = Math.max(0, (dimensions.h / 2) - 92);
 
   return (
     <div ref={containerRef} style={ringContainerStyle}>
@@ -89,7 +99,11 @@ export function PlayerRing({ players, tIdx, dIdx, myId, isHost, onKick }: Player
                 fontSize: '0.7rem', 
                 fontWeight: 800, 
                 color: isMe ? '#38bdf8' : 'white',
-                textShadow: '0 1px 3px rgba(0,0,0,0.8)' 
+                textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+                maxWidth: '100%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
               }}>
                 {isMe ? 'TÚ' : p.name.toUpperCase()}
               </div>
@@ -114,7 +128,7 @@ const ringContainerStyle: React.CSSProperties = {
 
 const playerWrapperStyle: React.CSSProperties = {
   position: 'absolute',
-  width: '85px',
+  width: '92px',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',

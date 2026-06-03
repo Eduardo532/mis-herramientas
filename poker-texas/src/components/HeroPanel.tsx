@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { GameState } from '../types/poker';
+import { peerService } from '../services/peerService';
 
 interface HeroPanelProps {
   game: GameState;
@@ -25,7 +26,16 @@ export function HeroPanel({ game, myId, roomId, bb, onAction }: HeroPanelProps) 
     <div style={heroContainerStyle}>
       <div style={topRowStyle}>
         <div style={{ textAlign: 'left' }}>
-          <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 800 }}>SALA #{roomId}</div>
+          <div style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            SALA #{roomId}
+            <button 
+              onClick={() => peerService.requestSync()} 
+              style={syncBtnStyle}
+              title="Forzar sincronización de la mesa"
+            >
+              ↻
+            </button>
+          </div>
           <div style={{ fontSize: '1rem', fontWeight: 900, color: 'white' }}>{me.name}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
@@ -53,7 +63,6 @@ export function HeroPanel({ game, myId, roomId, bb, onAction }: HeroPanelProps) 
             </div>
 
             <div style={{ ...actionRowStyle, marginTop: '10px' }}>
-              {/* CORRECCIÓN DE ACCESIBILIDAD Y AUTOFILL */}
               <label htmlFor="raiseAmountInput" style={{ display: 'none' }}>Monto a subir</label>
               <input 
                 id="raiseAmountInput"
@@ -125,4 +134,15 @@ const raiseInputStyle: React.CSSProperties = {
   fontSize: '1.2rem',
   fontWeight: 900,
   outline: 'none'
+};
+
+const syncBtnStyle: React.CSSProperties = {
+  background: 'transparent',
+  border: '1px solid #334155',
+  color: '#94a3b8',
+  borderRadius: '4px',
+  cursor: 'pointer',
+  padding: '2px 6px',
+  fontSize: '0.7rem',
+  transition: 'all 0.2s',
 };

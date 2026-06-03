@@ -1,6 +1,19 @@
 import { Peer, DataConnection } from 'peerjs';
 import { GameState, RoomConfig, ActionPayload, AppUpdate, NetworkMessage } from '../types/poker';
 
+// --- Configuración de Red ---
+const PEER_CONFIG = {
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' }
+    ]
+  }
+};
+
 class PeerService {
   private peer: Peer | null = null;
   private connections: Map<string, DataConnection> = new Map();
@@ -26,25 +39,42 @@ class PeerService {
     return Math.random().toString(36).substring(2, 7).toUpperCase();
   }
 
+  private toRoomPeerId(roomCode: string): string {
+    const normalized = roomCode.trim().toUpperCase();
+    return normalized.startsWith('POKER-') ? `poker-${normalized.slice(6)}` : `poker-${normalized}`;
+  }
+
   // --- Inicialización y Suscripción ---
 
   async initLocalPeer(): Promise<string> {
-    const savedId = sessionStorage.getItem('poker_session_id');
-    return new Promise((resolve) => {
-      this.peer = savedId ? new Peer(savedId) : new Peer();
+    if (this.peer && !this.peer.destroyed && this.myId) {
+      return this.myId;
+    }
+
+    return new Promise((resolve, reject) => {
+      const savedId = localStorage.getItem('poker_peer_id');
+      
+      this.peer = savedId ? new Peer(savedId, PEER_CONFIG) : new Peer(PEER_CONFIG);
       
       this.peer.on('open', (id) => {
+        localStorage.setItem('poker_peer_id', id);
         this.myId = id;
-        sessionStorage.setItem('poker_session_id', id);
         resolve(id);
       });
 
       this.peer.on('error', (err: any) => {
-        console.error('PeerJS Error:', err);
         if (err.type === 'unavailable-id') {
-          sessionStorage.clear();
+          localStorage.removeItem('poker_peer_id');
           window.location.reload();
+          return;
         }
+
+        if (err.type === 'peer-unavailable' && !this.isHost) {
+          alert('No se pudo encontrar esa sala. Revisa el código y que el host siga conectado.');
+          return;
+        }
+
+        reject(err);
       });
     });
   }
@@ -69,43 +99,58 @@ class PeerService {
   async createRoom(nick: string, config: RoomConfig) {
     this.isHost = true;
     this.cfg = config;
+    this.connections.forEach(conn => conn.close());
+    this.connections.clear();
+    this.hostConn = null;
+    this.game = {
+      phase: 'WAITING',
+      pot: 0,
+      bet: 0,
+      dIdx: -1,
+      tIdx: -1,
+      players: []
+    };
     
     const shortId = this.generateShortId();
+    const peerId = this.toRoomPeerId(shortId);
     
     if (this.peer) {
       this.peer.destroy();
     }
     
-    this.peer = new Peer(shortId);
+    setTimeout(() => {
+      this.peer = new Peer(peerId, PEER_CONFIG);
 
-    this.peer.on('open', (id) => {
-      this.myId = id;
-      this.roomId = id;
-      sessionStorage.setItem('poker_session_id', id);
-      
-      this.game.players = []; 
-      this.addPlayer(id, nick);
+      this.peer.on('open', (id) => {
+        this.myId = id;
+        this.roomId = shortId;
+        
+        this.game.players = []; 
+        this.addPlayer(id, nick);
 
-      this.peer?.on('connection', (conn) => {
-        // CORRECCIÓN CRÍTICA: Pasamos el objeto de conexión completo (conn)
-        conn.on('data', (data: any) => this.handleNetworkData(conn, data));
-        conn.on('close', () => this.handleDisconnect(conn.peer));
+        this.peer?.on('connection', (conn) => {
+          conn.on('data', (data: any) => this.handleNetworkData(conn, data));
+          conn.on('close', () => this.handleDisconnect(conn.peer));
+          conn.on('error', () => this.handleDisconnect(conn.peer));
+        });
+
+        this.emit({ 
+          view: 'GAME', 
+          roomId: this.roomId, 
+          game: this.game, 
+          cfg: this.cfg, 
+          myId: this.myId 
+        });
       });
 
-      this.emit({ 
-        view: 'GAME', 
-        roomId: this.roomId, 
-        game: this.game, 
-        cfg: this.cfg, 
-        myId: this.myId 
+      this.peer.on('error', (err: any) => {
+        if (err.type === 'unavailable-id') {
+          this.createRoom(nick, config);
+          return;
+        }
+        alert('No se pudo crear la sala. Intenta nuevamente.');
       });
-    });
-
-    this.peer.on('error', (err: any) => {
-      if (err.type === 'unavailable-id') {
-        this.createRoom(nick, config);
-      }
-    });
+    }, 200);
   }
 
   private sync() {
@@ -186,13 +231,17 @@ class PeerService {
   // --- Lógica de Cliente (Jugador) ---
 
   joinRoom(nick: string, rid: string) {
+    if (!this.peer || this.peer.destroyed || !this.myId) {
+      alert('La conexión todavía no está lista. Intenta unirte nuevamente en unos segundos.');
+      return;
+    }
+
     this.isHost = false;
-    this.roomId = rid;
-    this.hostConn = this.peer!.connect(rid, { reliable: true });
+    this.roomId = rid.trim().toUpperCase();
+    this.hostConn = this.peer.connect(this.toRoomPeerId(this.roomId), { reliable: true });
     
     this.hostConn.on('open', () => {
       this.hostConn?.send({ type: 'JOIN', name: nick });
-      this.emit({ view: 'GAME', roomId: this.roomId, myId: this.myId });
     });
 
     this.hostConn.on('data', (data: any) => {
@@ -200,8 +249,12 @@ class PeerService {
       if (msg.type === 'SYNC') {
         this.game = msg.game;
         this.cfg = msg.cfg;
-        this.emit({ game: this.game, cfg: this.cfg, myId: this.myId });
+        this.emit({ view: 'GAME', roomId: this.roomId, game: this.game, cfg: this.cfg, myId: this.myId });
       }
+    });
+
+    this.hostConn.on('error', () => {
+      alert('No se pudo conectar con la sala. Revisa que el código sea correcto y que el host mantenga la página abierta.');
     });
 
     this.hostConn.on('close', () => {
@@ -218,19 +271,30 @@ class PeerService {
     }
   }
 
+  requestSync() {
+    if (!this.isHost && this.hostConn && this.hostConn.open) {
+      this.hostConn.send({ type: 'REQUEST_SYNC' });
+    }
+  }
+
   // --- Motor de Reglas ---
 
- private handleNetworkData(conn: DataConnection, data: any) {
+  private handleNetworkData(conn: DataConnection, data: any) {
     const msg = data as NetworkMessage;
+    
     if (msg.type === 'JOIN') {
       const pid = conn.peer;
       this.connections.set(pid, conn);
       this.addPlayer(pid, msg.name);
-      
       setTimeout(() => this.sync(), 500);
       
     } else if (msg.type === 'ACTION') {
       this.processAction(conn.peer, msg.action);
+
+    } else if (msg.type === 'REQUEST_SYNC') {
+      if (conn && conn.open) {
+        conn.send({ type: 'SYNC', game: this.game, cfg: this.cfg });
+      }
     }
   }
 

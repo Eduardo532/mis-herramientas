@@ -29,6 +29,8 @@ function PokerApp() {
 
   // --- Efecto de Inicialización y Suscripción P2P ---
   useEffect(() => {
+    let cancelled = false;
+
     const unsubscribe = peerService.subscribe((newState) => {
       // Actualizamos cada pieza de estado solo si viene en el mensaje
       if (newState.game) setGameState({ ...newState.game }); // Forzamos re-render
@@ -37,7 +39,17 @@ function PokerApp() {
       if (newState.view) setView(newState.view);
       if (newState.myId) setMyId(newState.myId);
     });
-    return unsubscribe;
+
+    peerService.initLocalPeer().then((id) => {
+      if (!cancelled) setMyId(id);
+    }).catch(() => {
+      if (!cancelled) alert('No se pudo iniciar la conexión P2P. Recarga la página e intenta nuevamente.');
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
   }, []);
 
   // --- Controladores de Acción del Usuario ---
