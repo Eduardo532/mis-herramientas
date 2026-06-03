@@ -7,7 +7,7 @@ export const Stats: React.FC = () => {
   const [format, setFormat] = useState<'min' | 'hours' | 'days'>('hours');
 
   const stats = useMemo(() => {
-    const vistos = animes.filter(a => a.status === 'Visto');
+    const vistos = animes.filter(a => a.status === 'Vistos');
     const totalMin = vistos.reduce((acc, a) => acc + (a.episodes * a.durationPerEpisode), 0);
     
     // --- Análisis de géneros ---

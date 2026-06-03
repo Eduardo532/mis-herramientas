@@ -1,4 +1,4 @@
-export type AnimeStatus = 'Visto' | 'Por Ver' | 'Buscando';
+export type AnimeStatus = 'Vistos' | 'Por Ver' | 'Buscando';
 
 export interface Anime {
   id: string;
